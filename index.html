@@ -959,6 +959,43 @@ function nuevoCodigo(){
 }
 if(!ACCESO.codigo){ ACCESO.codigo = nuevoCodigo(); guardarAcceso(); }
 
+/* ---------- Un caso es un juego de respuestas, no un teléfono ----------
+   El correo queda guardado, pero el envío no: si la familia vuelve con
+   respuestas distintas —otro hijo, o el mismo meses después— eso es un
+   caso nuevo, lleva su propio código y hay que volver a enviarlo.      */
+function firmaCaso(){ try{ return JSON.stringify(S); }catch(e){ return 'x'+Date.now(); } }
+function casoEnviado(){ return !!ACCESO.correo && ACCESO.firma === firmaCaso(); }
+/* Teléfono que ya registró con una versión anterior, sin firma: su código
+   ya se usó, así que el próximo envío tiene que estrenar uno. */
+if(ACCESO.correo && ACCESO.firma === undefined){ ACCESO.firma = '(version anterior)'; guardarAcceso(); }
+
+function prepararCaso(){
+  const f = firmaCaso();
+  if(ACCESO.firma && ACCESO.firma !== f) ACCESO.codigo = nuevoCodigo();
+  ACCESO.firma = f;
+}
+
+/* El correo ya está en el teléfono de un caso anterior: no se le vuelve a
+   pedir la autorización, pero enviar ESTE caso sigue siendo un acto suyo. */
+function renderReenvio(titulo, fn, etiqueta){
+  return `<div class="item">
+    <div class="t">${titulo}</div>
+    <div class="d">Se enviará a <strong style="color:#E9B949">${ACCESO.correo}</strong>, el correo que dejó antes. Estas respuestas son distintas a las de la vez pasada, así que es un caso nuevo y llevará su propio código.</div>
+    <div style="margin-top:12px">
+      ${avisoSinRed()}
+      <button class="go solid" onclick="${fn}">${sinRed()?'Guardar y enviar cuando haya internet':(etiqueta||'Enviármelo')}</button>
+      <button class="go quiet" style="margin-top:10px" onclick="usarOtroCorreo()">Usar otro correo</button>
+    </div>
+  </div>`;
+}
+function usarOtroCorreo(){ delete ACCESO.correo; delete ACCESO.nombre; guardarAcceso(); draw(); }
+
+function nuevaEvaluacion(){
+  if(!confirm('Esto borra las respuestas y su correo de este teléfono, y comienza una evaluación nueva. ¿Continuar?')) return;
+  try{ localStorage.removeItem('cdss_sueno_fam'); }catch(e){}
+  location.reload();
+}
+
 /* ---------- Carga útil que se envía ---------- */
 /* ---------- Encuesta completa, tal como la marcó la familia ---------- */
 const ETIQUETAS = {"ctx": {"prematuroSeg": "Prematuridad o seguimiento de alto riesgo neonatal","tea": "Trastorno del espectro autista","tdah": "TDAH diagnosticado","neuro": "Otro trastorno del neurodesarrollo o discapacidad","estimulantes": "Recibe medicación estimulante","estres": "Estrés o ansiedad referidos por la familia","despiertanNino": "Alguno de los padres despierta al niño en la noche porque llega demasiado tarde para saludarlo","trayecto": "Algún padre sale muy temprano o regresa después de las 8:00 p.m."},"root": {"siestaTarde": "Alguna siesta se extiende después de las 4:00 p.m."},"siesta": {"siBrazosComiendo": "Se queda dormido comiendo en brazos de la madre","siBrazos": "Se queda dormido en brazos","siTV": "Se queda dormido viendo televisión","siCamaPadres": "Se queda dormido en la cama de los padres","siMecedora": "Se queda dormido en mecedora","siHamaca": "Se queda dormido en hamaca","siCoche": "Se queda dormido en el coche o en el carro","siCuna": "Se queda dormido solo, en su cuna o su cama"},"bears": {"bedtime": "Le cuesta acostarse o iniciar el sueño","somnolencia": "Somnolencia diurna, se duerme en clase o en el carro","cataplejia": "Se le afloja el cuerpo de repente al reírse o emocionarse","despPasaCama": "Se despierta para pasarse de su cama a la de los padres","despComer": "Se despierta para tomar la mamadera o el pecho","despOrinar": "Se despierta a orinar","desp3h": "Se despierta en sus primeras 3 horas de sueño, o se retuerce y se mueve mucho en esas horas","awakenings": "Otros despertares que requieren intervención del adulto","mismaHora": "Se despierta siempre a la misma hora","irregular": "Hora de acostarse y de despertar variables entre días","ronca": "Ronca de forma habitual"},"org": {"ronquido": "Ronca tres o más noches por semana","pausas": "Usted lo ha visto dejar de respirar unos segundos","bucal": "Duerme con la boca abierta","sudor": "Suda mucho durmiendo, aunque no haga calor","postura": "Duerme con la cabeza muy echada hacia atrás, o casi sentado","amigdalas": "Le han dicho que tiene las amígdalas o las adenoides grandes","obesidad": "El pediatra le ha dicho que tiene sobrepeso u obesidad","enuresis": "Volvió a orinarse en la cama después de haber dejado de hacerlo","piernas": "Se queja de las piernas al acostarse, o no puede tenerlas quietas","aliviaMov": "La molestia se le calma cuando mueve las piernas o se las soban","peorReposo": "Es peor cuando está quieto y al final del día","patadas": "Da patadas o mueve mucho las piernas mientras duerme","crecimiento": "En la casa le dicen que son \"dolores de crecimiento\"","familiarSPI": "Alguien más en la familia no puede tener las piernas quietas de noche","ferritina": "Le midieron la ferritina (el hierro) y salió por debajo de 50","bruxismo": "Rechina los dientes mientras duerme","bruxOye": "Se oye desde otro cuarto","bruxDolor": "Amanece con dolor de mandíbula o dolor de cabeza","bruxDesgaste": "El dentista le ha dicho que tiene los dientes desgastados","segSofa": "A veces se quedan dormidos en un sofá, sillón o mecedora","segSustancias": "Algún adulto toma alcohol, drogas o pastillas que dan sueño","segTabaco": "Alguien fuma en la casa, o se fumó durante el embarazo","segBlanda": "Hay colchón blando, almohadas, cobijas gruesas o peluches en la cama","segPrematuro": "Fue prematuro o nació con bajo peso","segOtros": "En la cama duermen también otros niños, o más de dos adultos","segBocaAbajo": "A veces amanece boca abajo o de lado","episodios": "Grita, se agita o se levanta a caminar dormido","primerTercio": "Pasa en las primeras tres o cuatro horas después de dormirse","amnesia": "Al día siguiente no se acuerda de nada","noResponde": "Durante el episodio está como ido y no la reconoce a usted","unoPorNoche": "Pasa una sola vez por noche y dura varios minutos","familiarPara": "Alguien más en la familia caminaba dormido o tenía terrores de noche","estereotipado": "Cada episodio es exactamente igual al anterior, como una grabación","agrupados": "Se repite dos o tres veces en la misma noche","breve": "Duran poco: menos de dos minutos","distonico": "Se pone rígido, se retuerce o queda en una postura forzada","recuerda": "Se acuerda de algo de lo que pasó","cualquierHora": "Puede pasar a cualquier hora de la noche, no solo al principio"},"cond": {"colecho": "Comparte cama con la madre o los padres","brazos": "Se duerme en brazos, mecedora, hamaca o coche","alimentaDormir": "Se duerme comiendo, al pecho o con mamadera","presencia": "Necesita que un adulto permanezca en el cuarto","reanuda": "De madrugada solo se reanuda el sueño si se restaura esa misma condición","acuestaDormido": "Se acuesta ya dormido","traslado": "Se queda dormido en un lugar y amanece en otro","tomaNocturna": "Recibe tomas de leche de noche o de madrugada","colechoReactivo": "El colecho empezó porque el niño se despertaba de madrugada","tvCuarto": "Hay televisor, tablet o celular dentro del dormitorio","resistencia": "Resistencia activa, negociación o llamadas repetidas","saleCama": "Se levanta de la cama repetidamente","sinLimites": "Los cuidadores no sostienen un límite consistente","sinRutina": "No hay rutina establecida antes de acostarse","pantallas": "Pantallas en la hora previa o dentro del dormitorio","cafeina": "Cafeína: café, té, chocolate, colas o energizantes","horarioIrregular": "Hora de acostarse variable de un día a otro","finSemana": "Diferencia mayor de 2 horas entre días de clase y fin de semana","duermeTarde": "En vacaciones duerme bien si elige su propio horario","despertarDificil": "Dificultad extrema para despertar en días de escuela","noSabenHoras": "Los cuidadores no saben cuántas horas necesita el niño","hiperactivo": "Hiperactividad, impulsividad, irritabilidad o agresividad","enlentecido": "Fatiga, apatía, lentitud, llanto fácil","escolar": "Bajo rendimiento escolar o quejas del maestro"}};
@@ -1225,7 +1262,8 @@ function renderBases(c, conBandera){
 
 /* --- Envío de la hoja de derivación al correo de la madre --- */
 function renderCorreoDerivacion(){
-  if(ACCESO.correo) return `<div class="inset" style="margin:16px 0">Enviado. Su código de caso es <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Guárdelo por si necesita volver sobre esto.</div>`;
+  if(casoEnviado()) return `<div class="inset" style="margin:16px 0">Enviado. Su código de caso es <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Guárdelo por si necesita volver sobre esto.</div>`;
+  if(ACCESO.correo) return `<div style="margin-top:18px">${renderReenvio('¿Le enviamos esta hoja a su correo?','registrarDerivacion()','Enviármela')}</div>`;
   return `<div class="item" id="correoDeriv" style="margin-top:18px">
     <div class="t">¿Le enviamos esta hoja a su correo?</div>
     <div class="d">Para que no dependa de imprimirla y pueda reenviársela al pediatra desde el teléfono. También queda con un código por si necesita retomarlo.</div>
@@ -1244,13 +1282,15 @@ function renderCorreoDerivacion(){
 }
 
 function registrarDerivacion(){
-  const em = (document.getElementById('dEmail').value||'').trim();
-  const ok = document.getElementById('dConsent').checked;
+  const dE=document.getElementById('dEmail'), dC=document.getElementById('dConsent');
+  const em = dE ? (dE.value||'').trim() : (ACCESO.correo||'');
+  const ok = dC ? dC.checked : !!ACCESO.correo;
   const err = document.getElementById('dErr');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ err.textContent='Revise el correo: no parece una dirección válida.'; return; }
-  if(!ok){ err.textContent='Necesitamos su autorización para poder guardar el correo.'; return; }
-  err.textContent='';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ if(err) err.textContent='Revise el correo: no parece una dirección válida.'; return; }
+  if(!ok){ if(err) err.textContent='Necesitamos su autorización para poder guardar el correo.'; return; }
+  if(err) err.textContent='';
   ACCESO.correo = em; ACCESO.fecha = new Date().toISOString();
+  prepararCaso();
   guardarAcceso();
   try{ enviarRegistro({origen:'DERIVACION · no ofrecer programa'}); }catch(e){}
   draw();
@@ -1331,14 +1371,16 @@ function renderCandadoPDF(){
 function irAcerca(){ paso = PASOS.findIndex(p=>p.id==='acerca'); draw(); window.scrollTo(0,0); }
 
 function registrar(){
-  const em = (document.getElementById('cEmail').value||'').trim();
-  const nm = (document.getElementById('cNombre').value||'').trim();
-  const ok = document.getElementById('cConsent').checked;
+  const cE=document.getElementById('cEmail'), cN=document.getElementById('cNombre'), cC=document.getElementById('cConsent');
+  const em = cE ? (cE.value||'').trim() : (ACCESO.correo||'');
+  const nm = cN ? (cN.value||'').trim() : (ACCESO.nombre||'');
+  const ok = cC ? cC.checked : !!ACCESO.correo;
   const err = document.getElementById('cErr');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ err.textContent='Revise el correo: no parece una dirección válida.'; return; }
-  if(!ok){ err.textContent='Necesitamos su autorización para poder guardar el correo.'; return; }
-  err.textContent = '';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ if(err) err.textContent='Revise el correo: no parece una dirección válida.'; return; }
+  if(!ok){ if(err) err.textContent='Necesitamos su autorización para poder guardar el correo.'; return; }
+  if(err) err.textContent = '';
   ACCESO.correo = em; ACCESO.nombre = nm; ACCESO.fecha = new Date().toISOString();
+  prepararCaso();
   guardarAcceso();
   try{ enviarRegistro(); }catch(e){}
   draw();
@@ -1443,7 +1485,8 @@ function renderTablero(c){
 
     ${M.cap.length?`<div class="note amber"><b>Antes de empezar, un ajuste a su realidad</b>En su caso ${M.cap.join(', ')}. Eso no es un fallo de la familia: es una condición con la que hay que contar. Ajuste el plan a lo que de verdad puede sostener todas las noches, aunque avance más lento. Un plan que no se puede cumplir se abandona completo.</div>`:''}
 
-    ${ACCESO.correo?`<div class="inset" style="margin-top:16px">Su caso quedó registrado con el código <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Guárdelo: sirve para retomar el caso sin repetir nada.${ACCESO.pendiente?` <strong style="color:#E8843C">Ahora mismo no hay internet: se enviará solo en cuanto vuelva la conexión.</strong>`:''}</div>`:''}
+    ${casoEnviado()?`<div class="inset" style="margin-top:16px">Su caso quedó registrado con el código <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Guárdelo: sirve para retomar el caso sin repetir nada.${ACCESO.pendiente?` <strong style="color:#E8843C">Ahora mismo no hay internet: se enviará solo en cuanto vuelva la conexión.</strong>`:''}</div>`:''}
+    ${hayAlgo && !casoEnviado() && ACCESO.correo ? renderReenvio('¿Le enviamos este mapa y el plan a su correo?','registrarTablero()','Enviármelo') : ''}
     ${hayAlgo && !ACCESO.correo?`<div class="item" id="mapaCorreo">
       <div class="t">¿Le enviamos este mapa y el plan a su correo?</div>
       <div class="d">Para tenerlo a mano y poder mostrárselo a su pediatra. El plan completo sigue abajo, lo lea o no lo envíe.</div>
@@ -1463,13 +1506,15 @@ function renderTablero(c){
 }
 
 function registrarTablero(){
-  const em = (document.getElementById('tEmail').value||'').trim();
-  const ok = document.getElementById('tConsent').checked;
+  const tE=document.getElementById('tEmail'), tC=document.getElementById('tConsent');
+  const em = tE ? (tE.value||'').trim() : (ACCESO.correo||'');
+  const ok = tC ? tC.checked : !!ACCESO.correo;
   const err = document.getElementById('tErr');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ err.textContent='Revise el correo: no parece una dirección válida.'; return; }
-  if(!ok){ err.textContent='Necesitamos su autorización para poder guardar el correo.'; return; }
-  err.textContent='';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ if(err) err.textContent='Revise el correo: no parece una dirección válida.'; return; }
+  if(!ok){ if(err) err.textContent='Necesitamos su autorización para poder guardar el correo.'; return; }
+  if(err) err.textContent='';
   ACCESO.correo = em; ACCESO.fecha = new Date().toISOString();
+  prepararCaso();
   guardarAcceso();
   try{ enviarRegistro({origen:'cdss-sueno-familias-tablero'}); }catch(e){}
   draw();
@@ -1680,11 +1725,11 @@ function renderPlan(){
       </tbody></table></div>
       <div class="inset">AASM 2016, avalado por la AAP. Por debajo de 4 meses los valores son referenciales: no existe recomendación formal.</div>
     </details>
-    ${ACCESO.correo
+    ${casoEnviado()
       ? `<button class="go solid" onclick="window.print()">Imprimir o guardar en PDF</button>`
-      : renderCandadoPDF()}
+      : (ACCESO.correo ? renderReenvio('Llévese el plan por escrito','registrar()','Enviar y habilitar el PDF') : renderCandadoPDF())}
     ${renderOferta()}
-    <button class="go quiet" style="margin-top:12px" onclick="if(confirm('¿Borrar todos los datos y comenzar una nueva evaluación?'))location.reload()">Nueva evaluación</button>
+    <button class="go quiet" style="margin-top:12px" onclick="nuevaEvaluacion()">Nueva evaluación</button>
   </div>`;
 }
 
