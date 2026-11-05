@@ -601,6 +601,26 @@ function motor(){
       (o.bruxismo&&(o.ronquido||o.pausas)));
   }
 
+  /* --- K. Narcolepsia ---
+     La cataplejía —pérdida súbita del tono desencadenada por emoción— es
+     prácticamente específica de narcolepsia tipo 1. En pediatría la demora
+     diagnóstica se mide en años porque la somnolencia se lee como pereza.
+     Detiene la encuesta: un plan de conducta no corrige esto y retrasa. */
+  {
+    let s=0,pro=[],con=[];
+    if(be.cataplejia){
+      s+=6;pro.push('Pérdida súbita del tono muscular desencadenada por risa o emoción (cataplejía)');
+      if(be.somnolencia){s+=3;pro.push('Somnolencia diurna asociada');}
+      if(c.estado==='ok'){s+=2;pro.push('El total de sueño en 24 h está dentro del rango para la edad: la somnolencia no se explica por privación');}
+      if(be.desp3h){s+=1;pro.push('Sueño nocturno fragmentado, frecuente en la narcolepsia pediátrica');}
+      con.push('Lo referido por la familia debe confirmarse en la consulta: hay episodios de otra naturaleza que se le parecen');
+    } else { con.push('No se refiere pérdida súbita del tono muscular'); }
+    add('narcolepsia','Narcolepsia · sospecha',
+      'La cataplejía es prácticamente específica · requiere polisomnografía y test de latencias múltiples',s,pro,con,
+      '¿Se le afloja el cuerpo al reírse y se mantiene consciente durante el episodio? Esa combinación no tiene otra explicación frecuente.',
+      be.cataplejia);
+  }
+
   /* --- I. Comorbilidad con neurodesarrollo --- */
   {
     let s=0,pro=[],con=[];
@@ -1302,6 +1322,12 @@ const LLANO = {
         d:'Roncar casi todas las noches, o dejar de respirar unos segundos, no se arregla con rutinas ni con horarios. Hay que revisar la vía aérea: a veces son las amígdalas o las adenoides. El médico decidirá si hace falta un estudio del sueño.' },
   she:{ t:'Los episodios de la noche hay que estudiarlos.',
         d:'Cuando se repiten varias veces en la misma noche y son siempre iguales, hay que descartar que no sean un simple terror nocturno. Se revisa con un estudio del cerebro durante el sueño.' },
+  narcolepsia:{ t:'Que se le afloje el cuerpo de repente hay que estudiarlo.',
+        d:'Que el cuerpo se le afloje al reírse o al emocionarse, sobre todo si además tiene mucho sueño de día, no es cansancio ni flojera. Se estudia en una consulta de sueño, y mientras antes se mire, mejor le va al niño.' },
+  spi:{ t:'Las piernas no lo dejan dormir.',
+        d:'Cuando la molestia aparece al estar quieto y se calma al mover las piernas, suele haber algo detrás que se mide con un análisis de sangre sencillo. No es un problema de hábitos ni son "dolores de crecimiento".' },
+  bruxismo:{ t:'Rechina los dientes y además ronca.',
+        d:'Las dos cosas juntas se revisan empezando por la respiración, no por los dientes. Una férula protege el diente pero no corrige la causa.' },
   suenoSeguro:{ t:'Dónde duerme su bebé.',
         d:'Compartir la cama en el primer año aumenta el riesgo. Lo más seguro es la misma habitación, pero en su propia superficie.' }
 };
@@ -1324,6 +1350,7 @@ function renderDerivacion(dx){
     <h3>Qué hacer ahora</h3>
     <ul class="plan">
       <li><strong>Pida una cita con su pediatra</strong> y lleve impresa la hoja que aparece abajo.</li>
+      ${rojas.some(d=>d.id==='narcolepsia')?`<li><strong>Mientras tanto, acompáñelo donde una caída sea peligrosa:</strong> escaleras, piscina, bicicleta. Si el cuerpo se le afloja de repente, puede caerse sin poder sostenerse.</li>`:''}
       ${rojas.some(d=>d.id==='aos')?`<li><strong>Grábele un video de dos minutos mientras duerme</strong>, acostado boca arriba y con el pecho descubierto, donde se oiga la respiración. Al médico le sirve muchísimo.</li>`:''}
       <li><strong>No empiece ningún entrenamiento de sueño por su cuenta</strong> mientras tanto, ni lo deje llorando solo. Espere a que el médico revise a su hijo.</li>
       <li>Si aparece dificultad para respirar, coloración azulada, o el niño deja de respirar y usted tiene que estimularlo, <strong>eso es una urgencia</strong> y se atiende hoy, no en una cita.</li>
@@ -1344,7 +1371,7 @@ function renderDerivacion(dx){
     ${renderCorreoDerivacion()}
 
     <button class="go solid" onclick="window.print()">Imprimir esta hoja</button>
-    <button class="go quiet" style="margin-top:12px" onclick="if(confirm('¿Borrar todos los datos y comenzar de nuevo?'))location.reload()">Nueva evaluación</button>
+    <button class="go quiet" style="margin-top:12px" onclick="nuevaEvaluacion()">Nueva evaluación</button>
   </div>`;
 }
 
@@ -1834,10 +1861,32 @@ function bind(){
     el.addEventListener('click',toggle);
     el.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault();toggle();} });
   });
-  const num=(id,key)=>{ const el=document.getElementById(id); if(!el) return;
-    el.addEventListener('change',()=>{ S[key]= el.value===''? null : Number(el.value); draw(); }); };
-  const tim=(id,key)=>{ const el=document.getElementById(id); if(!el) return;
-    el.addEventListener('change',()=>{ S[key]=el.value; draw(); }); };
+  /* Los campos de hora y de número NO repintan la pantalla mientras se usan.
+     En iOS la rueda del selector de hora emite un 'change' por cada giro: si
+     se repinta ahí, el campo se destruye a media maniobra y el selector se
+     cierra con la hora que hubiera en ese instante, sin dejar buscarla. Aquí
+     el valor se guarda al vuelo y la pantalla se repinta cuando ya no hay
+     ningún campo en uso, para que los totales de abajo salgan igual. */
+  let pendiente = false;
+  const campo=(id,key,conv)=>{
+    const el=document.getElementById(id); if(!el) return;
+    let ultimo = el.value;
+    const guardar=()=>{
+      if(el.value!==ultimo){ ultimo = el.value; pendiente = true; }
+      S[key] = conv(el.value);
+    };
+    el.addEventListener('change', guardar);
+    el.addEventListener('blur', ()=>{
+      guardar();
+      setTimeout(()=>{
+        const a = document.activeElement;
+        if(a && a.tagName==='INPUT' && a.closest && a.closest('#main')) return;  // sigue llenando
+        if(pendiente){ pendiente = false; draw(); }
+      }, 80);
+    });
+  };
+  const num=(id,key)=>campo(id,key,v=> v==='' ? null : Number(v));
+  const tim=(id,key)=>campo(id,key,v=> v);
   num('edad','edadMeses'); num('despertares','despertares'); num('minDespierto','minDespierto');
   num('siestasN','siestasN'); num('siestaMin','siestaMin'); num('nochesSemana','nochesSemana');
   tim('acostarse','acostarse'); tim('dormirse','dormirse'); tim('despertar','despertar');
