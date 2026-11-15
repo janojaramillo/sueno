@@ -133,6 +133,8 @@ input:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:2p
   padding:13px 0;border-bottom:1px solid var(--line-soft)}
 .metric:last-child{border-bottom:0}
 .metric .k{font-size:.94rem;color:var(--muted)}
+.metric .k em{display:block;font-style:normal;font-size:.8rem;line-height:1.4;
+  color:var(--muted-2,#6B7C93);margin-top:3px;max-width:30ch}
 .metric .v{font-size:1.06rem;font-weight:600;white-space:nowrap}
 .metric .v.bad{color:var(--red)} .metric .v.good{color:var(--green)} .metric .v.warn{color:var(--gold)}
 
@@ -198,6 +200,15 @@ tr.hl td{color:var(--gold)}
 }
 .go.solid{background:var(--gold);color:#0B1524;border-color:var(--gold)}
 .go.quiet{border-color:var(--line);color:var(--muted)}
+
+/* Selector de dos opciones (sí / no) */
+.dual{display:flex;gap:10px;margin-bottom:9px}
+.dual button{
+  flex:1;padding:15px 10px;border-radius:12px;border:1px solid var(--line-soft);
+  background:var(--panel-2);color:var(--texto);font-size:1rem;font-weight:600;
+  font-family:'Inter',sans-serif;cursor:pointer
+}
+.dual button.on{border-color:var(--gold);background:#1B2842;color:var(--gold)}
 
 /* ---------- aviso clínico y pie ---------- */
 .disc{
@@ -308,7 +319,7 @@ details .inset{margin-top:8px}
   <div class="disc">
     <div class="t">El sueño de su hijo</div>
     <div class="l">Aviso clínico</div>
-    <p>Herramienta de orientación basada en guías publicadas. <strong>No es un diagnóstico y no sustituye la consulta con su pediatra.</strong> Si su hijo tiene dificultad para respirar, se pone morado o deja de respirar, busque atención médica de inmediato. Sus respuestas se quedan en este teléfono y solo se envían si usted registra su correo. El autor atiende consultas de sueño de forma remunerada; vea la declaración de intereses en la pestaña Acerca de.</p>
+    <p>Herramienta de orientación basada en guías publicadas. <strong>No es un diagnóstico y no sustituye la consulta con su pediatra.</strong> Si su hijo tiene dificultad para respirar, se pone morado o deja de respirar, busque atención médica de inmediato. Sus respuestas se quedan en este teléfono y solo se envían si usted registra su correo. Esta herramienta es gratuita: no hay cobro de ninguna clase.</p>
   </div>
 
   <footer><b>Dr. Jano Jaramillo — Médico Pediatra y Neonatólogo · Posgrado en Trastornos del Aprendizaje.</b> Fuentes: AASM 2016 (J Clin Sleep Med 12:785, 12:1549); ICSD-3-TR 2023; Mindell 2006 (Sleep 29:1263); Morgenthaler 2006 (Sleep 29:1277); Galland 2012, 2018; Owens &amp; Dalzell 2005 (BEARS).</footer>
@@ -328,7 +339,7 @@ details .inset{margin-top:8px}
 const S = {
   edadMeses:null, prematuro:false, semanas:null,
   acostarse:'', dormirse:'', despertar:'', despertares:null, minDespierto:null,
-  siestasN:null, siestaMin:null, siestaTarde:false, nochesSemana:null,
+  haceSiesta:null, siestasN:null, siestaMin:null, siestaTarde:false, nochesSemana:null,
   bears:{}, org:{}, cond:{}, ctx:{}, siesta:{}
 };
 
@@ -342,6 +353,29 @@ const BANDAS = [
   {max:999, lb:'13–18 años',  min:8,  max_:10, siestas:'0'}
 ];
 function banda(m){ return BANDAS.find(b=>m<=b.max) || BANDAS[BANDAS.length-1]; }
+
+/* ¿El niño hace siesta? Si no la hace, el aviso sobre la siesta no
+   tiene a qué referirse y no se muestra. */
+const SIESTA_DONDE = ['siBrazosComiendo','siBrazos','siTV','siCamaPadres',
+                      'siMecedora','siHamaca','siCoche','siCuna'];
+function haySiesta(){
+  if(S.haceSiesta === false) return false;
+  if(S.haceSiesta === true)  return true;
+  return (S.siestasN||0) > 0 || (S.siestaMin||0) > 0 ||
+         SIESTA_DONDE.some(k => S.siesta[k]);
+}
+
+/* Si la familia dice que no hace siesta, se borra lo que hubiera
+   quedado escrito: si no, un dato viejo seguiría contando en el
+   total de 24 horas sin que nadie lo vea en pantalla. */
+function ponerSiesta(v){
+  S.haceSiesta = (S.haceSiesta === v) ? null : v;
+  if(S.haceSiesta !== true){
+    S.siestasN = null; S.siestaMin = null; S.siestaTarde = false;
+    SIESTA_DONDE.forEach(k => S.siesta[k] = false);
+  }
+  draw();
+}
 
 /* ---------- utilidades de tiempo ---------- */
 function t2m(t){ if(!t) return null; const [h,mi]=t.split(':').map(Number); return h*60+mi; }
@@ -678,7 +712,7 @@ const PASOS = [
   {id:'org',  n:'Antes de empezar',r:renderOrg},
   {id:'ctx',  n:'Contexto',      r:renderCtx},
   {id:'cuant',n:'Cuantificación',r:renderCuant},
-  {id:'bears',n:'BEARS',         r:renderBears},
+  {id:'bears',n:'Señales',       r:renderBears},
   {id:'cond', n:'Conducta',      r:renderCond},
   {id:'plan', n:'Plan',          r:renderPlan},
   {id:'acerca',n:'Acerca de',    r:renderAcerca}
@@ -705,7 +739,7 @@ function renderCtx(){
     ${chk(S.ctx,'tea','Trastorno del espectro autista')}
     ${chk(S.ctx,'tdah','TDAH diagnosticado')}
     ${chk(S.ctx,'neuro','Otro trastorno del neurodesarrollo o discapacidad')}
-    ${chk(S.ctx,'estimulantes','Recibe medicación estimulante')}
+    ${chk(S.ctx,'estimulantes','Recibe medicación estimulante','Son los que se usan para el TDAH: metilfenidato (Ritalin, Ritalina, Concerta) o lisdexanfetamina (Vyvanse).')}
     ${chk(S.ctx,'estres','Estrés o ansiedad referidos por la familia')}
     <h3>Contexto familiar</h3>
     ${chk(S.ctx,'despiertanNino','Alguno de los padres despierta al niño en la noche porque llega demasiado tarde para saludarlo')}
@@ -731,6 +765,11 @@ function renderCuant(){
       <label class="f"><span class="lb">Minutos despierto en total</span><input type="number" id="minDespierto" min="0" max="480" inputmode="numeric" value="${S.minDespierto??''}" placeholder="más o menos"></label>
     </div>
     <h3>Siestas</h3>
+    <div class="dual">
+      <button class="${S.haceSiesta===true?'on':''}" onclick="ponerSiesta(true)">Sí hace siesta</button>
+      <button class="${S.haceSiesta===false?'on':''}" onclick="ponerSiesta(false)">No hace siesta</button>
+    </div>
+    ${S.haceSiesta===true?`
     <div class="row">
       <label class="f"><span class="lb">Número al día</span><input type="number" id="siestasN" min="0" max="6" inputmode="numeric" value="${S.siestasN??''}" placeholder="0"></label>
       <label class="f"><span class="lb">Minutos totales</span><input type="number" id="siestaMin" min="0" max="360" inputmode="numeric" value="${S.siestaMin??''}" placeholder="0"></label>
@@ -744,8 +783,8 @@ function renderCuant(){
     ${chk(S.siesta,'siMecedora','Se queda dormido en mecedora')}
     ${chk(S.siesta,'siHamaca','Se queda dormido en hamaca')}
     ${chk(S.siesta,'siCoche','Se queda dormido en el coche o en el carro')}
-    ${chk(S.siesta,'siCuna','Se queda dormido solo, en su cuna o su cama')}
-    <div class="note amber destacado"><b>El error más común: arreglar la noche y dejar la siesta igual</b>Su hijo <strong>no distingue entre la siesta y la noche</strong>. Si a mediodía aprende a dormirse en brazos, en la mecedora o con la mamadera, va a pedir exactamente eso mismo a las dos de la mañana. <strong>Lo que le quite de noche, quíteselo también en la siesta.</strong> Corregir solo la noche es la razón número uno de que un plan bien hecho no funcione.</div>
+    ${chk(S.siesta,'siCuna','Se queda dormido solo, en su cuna o su cama')}`:''}
+    ${haySiesta()?`<div class="note amber destacado"><b>El error más común: arreglar la noche y dejar la siesta igual</b>Su hijo <strong>no distingue entre la siesta y la noche</strong>. Si a mediodía aprende a dormirse en brazos, en la mecedora o con la mamadera, va a pedir exactamente eso mismo a las dos de la mañana. <strong>Lo que le quite de noche, quíteselo también en la siesta.</strong> Corregir solo la noche es la razón número uno de que un plan bien hecho no funcione.</div>`:''}
     ${c.avisos.length?`<div class="note red"><b>Revise las horas antes de continuar</b><ul style="margin:8px 0 0;padding-left:18px">${c.avisos.map(a=>`<li>${a}</li>`).join('')}</ul><div style="margin-top:10px">Mientras alguna hora sea implausible no se calculan totales ni se sugiere hora de acostarse: una cifra mal capturada produciría un plan equivocado.</div></div>`:''}
     ${b && c.total!==null ? `<div class="metrics">
       <div class="metric"><span class="k">Tiempo en cama</span><span class="v">${hm(c.enCama)}</span></div>
@@ -754,28 +793,31 @@ function renderCuant(){
       <div class="metric"><span class="k">Siesta</span><span class="v">${hm(c.siesta)}</span></div>
       <div class="metric"><span class="k">Total en 24 h</span><span class="v ${color}">${hm(c.total)}</span></div>
       <div class="metric"><span class="k">Rango para ${b.lb}</span><span class="v">${b.min}–${b.max_} h</span></div>
-      <div class="metric"><span class="k">Eficiencia de sueño</span><span class="v ${c.efic<85?'warn':'good'}">${c.efic!==null?c.efic+' %':'—'}</span></div>
+      <div class="metric"><span class="k">Eficiencia de sueño<em>Cuánto del tiempo que pasa en la cama lo pasa dormido. No dice si duerme suficiente.</em></span><span class="v ${c.efic<85?'warn':'good'}">${c.efic!==null?c.efic+' %':'—'}</span></div>
     </div>
-    ${est?`<div class="note ${c.estado==='ok'?'green':(c.estado==='bajo'?'red':'amber')}"><b>Total ${est}</b>${c.estado==='bajo'?'Le faltan '+hm(b.min*60-c.total)+' para llegar al mínimo de su edad. Antes de pensar que es costumbre, revise la pestaña de señales de alarma.':(c.estado==='alto'?'Duerme por encima del rango de su edad. Si aun así lo ve somnoliento de día, eso hay que revisarlo con el pediatra.':'La cantidad de horas está bien. Si aun así lo ve mal de día, el problema no son las horas sino cómo o cuándo duerme.')}</div>`:''}
+    ${est?`<div class="note ${c.estado==='ok'?'green':(c.estado==='bajo'?'red':'amber')}"><b>Total ${est}</b>${c.estado==='bajo'?'Le faltan '+hm(b.min*60-c.total)+' para llegar al mínimo de su edad. Antes de pensar que es costumbre, revise la pestaña de señales de alarma.'
+       + (c.efic!==null && c.efic>=85
+          ? ' <strong>Fíjese en la eficiencia: '+c.efic+' %.</strong> Su hijo se duerme rápido y casi no se despierta, así que el problema no es cómo duerme: es que pasa poco tiempo en la cama. Lo que le falta es acostarlo más temprano o levantarlo más tarde, no entrenarlo a dormir.'
+          : ''):(c.estado==='alto'?'Duerme por encima del rango de su edad. Si aun así lo ve somnoliento de día, eso hay que revisarlo con el pediatra.':'La cantidad de horas está bien. Si aun así lo ve mal de día, el problema no son las horas sino cómo o cuándo duerme.')}</div>`:''}
     ${c.acostarSug!==null?`<div class="item">
       <div class="t">Hora sugerida para dormir</div>
       <div class="k">${m2t(c.acostarSug)}</div>${c.acostarSugAviso?`
       <div class="d"><strong style="color:var(--gold)">Revise las siestas antes de usar esta hora.</strong> El resultado cae fuera de lo esperable, y eso suele ser porque las siestas son demasiado largas o porque lo levantan muy temprano.</div>`:''}
     </div>`:''}
     ${c.latencia!==null&&c.latencia>30?`<div class="note red"><b>Tarda mucho en dormirse</b>Más de media hora desde que se acuesta. Suele ser porque lo acuestan antes de que tenga sueño, o porque la siesta fue muy tarde.</div>`:''}`:''}
-    ${go('Continuar al tamizaje',true)}
+    ${go('Continuar',true)}
   </div>`;
 }
 
 function renderBears(){
   return `<div class="panel">
-    <h2>Tamizaje BEARS</h2>
-    <h3>B · Problemas al acostarse</h3>
+    <h2>Señales que hay que mirar</h2>
+    <h3>Para acostarse y dormirse</h3>
     ${chk(S.bears,'bedtime','Le cuesta acostarse o iniciar el sueño')}
-    <h3>E · Somnolencia diurna excesiva</h3>
+    <h3>Sueño durante el día</h3>
     ${chk(S.bears,'somnolencia','Somnolencia diurna, se duerme en clase o en el carro')}
     ${chk(S.bears,'cataplejia','Se le afloja el cuerpo de repente al reírse o emocionarse','',true)}
-    <h3>A · Despertares nocturnos</h3>
+    <h3>Despertares en la noche</h3>
     ${chk(S.bears,'despPasaCama','Se despierta para pasarse de su cama a la de los padres')}
     ${chk(S.bears,'despComer','Se despierta para tomar la mamadera o el pecho')}
     ${chk(S.bears,'despOrinar','Se despierta a orinar')}
@@ -784,11 +826,11 @@ function renderBears(){
     ${chk(S.bears,'mismaHora','Se despierta siempre a la misma hora')}
     <label class="f"><span class="lb">¿Cuántas noches por semana se despierta?</span>
       <input type="number" id="nochesSemana" min="0" max="7" inputmode="numeric" value="${S.nochesSemana??''}" placeholder="0 a 7"></label>
-    <h3>R · Regularidad y duración</h3>
+    <h3>Horarios</h3>
     ${chk(S.bears,'irregular','Hora de acostarse y de despertar variables entre días')}
-    <h3>S · Ronquido</h3>
+    <h3>Ronquido</h3>
     ${chk(S.bears,'ronca','Ronca de forma habitual')}
-    ${go('Continuar a banderas rojas',true)}
+    ${go('Continuar',true)}
   </div>`;
 }
 
@@ -833,7 +875,7 @@ function renderOrg(){
     ${chk(S.org,'bruxismo','Rechina los dientes mientras duerme')}
     ${chk(S.org,'bruxOye','Se oye desde otro cuarto')}
     ${chk(S.org,'bruxDolor','Amanece con dolor de mandíbula o dolor de cabeza')}
-    ${chk(S.org,'bruxDesgaste','El dentista le ha dicho que tiene los dientes desgastados')}
+    ${chk(S.org,'bruxDesgaste','El dentista le ha dicho que tiene los dientes desgastados','Que están aplanados o limados, como si les hubieran bajado la punta, sobre todo los colmillos.')}
 
     ${(S.edadMeses??99) < 12 ? `
     <h3>Dónde duerme su bebé</h3>
@@ -863,7 +905,6 @@ function renderOrg(){
     ${chk(S.org,'recuerda','Se acuerda de algo de lo que pasó')}
     ${chk(S.org,'cualquierHora','Puede pasar a cualquier hora de la noche, no solo al principio')}
 
-    <div class="note amber"><b>Si de día lo ve cansado, apático o lento</b>Coménteselo al pediatra: hace falta un examen de sangre y revisar si ronca.</div>
 
     ${rojas.length ? `<div class="note red destacado"><b>Deténgase aquí</b>
       Por lo que usted marcó, <strong>lo que su hijo necesita primero es un médico, no una rutina nueva</strong>. Seguir llenando la encuesta no le va a servir, y aplicar un plan de sueño encima de esto puede atrasar meses el diagnóstico correcto.
@@ -954,10 +995,10 @@ function renderDx(){
 const ENDPOINT_REGISTRO = 'https://script.google.com/macros/s/AKfycbxa-3QyDRHOEZCSxzxYofP7l2UXfAZ9fU2CDhF8wJfN4Sgdk29foAWadhp0WGhoUsM/exec';
 const CORREO_CONTACTO   = 'drjanojaramillo@gmail.com';
 const CLAVE_ENVIO       = 'sueno-chitre-2026-x7k';  /* debe ser idéntica en el Apps Script */
-const PRECIO_PROGRAMA   = 'B/. 100';    /* pago único por el programa completo */
+/* Sin cobro. Decisión del autor (nov 2026): la herramienta se
+   entrega gratuita mientras se usa con fines no lucrativos. No
+   hay precios, ni oferta, ni llamada a pagar en ninguna pantalla. */
 const DIAS_PROGRAMA     = 45;
-const SESIONES          = 2;
-const MINUTOS_SESION    = 30;
 const WHATSAPP          = '';           /* opcional: número con código de país, sin + ni espacios */
 const RETENCION_MESES   = 24;
 
@@ -1018,7 +1059,7 @@ function nuevaEvaluacion(){
 
 /* ---------- Carga útil que se envía ---------- */
 /* ---------- Encuesta completa, tal como la marcó la familia ---------- */
-const ETIQUETAS = {"ctx": {"prematuroSeg": "Prematuridad o seguimiento de alto riesgo neonatal","tea": "Trastorno del espectro autista","tdah": "TDAH diagnosticado","neuro": "Otro trastorno del neurodesarrollo o discapacidad","estimulantes": "Recibe medicación estimulante","estres": "Estrés o ansiedad referidos por la familia","despiertanNino": "Alguno de los padres despierta al niño en la noche porque llega demasiado tarde para saludarlo","trayecto": "Algún padre sale muy temprano o regresa después de las 8:00 p.m."},"root": {"siestaTarde": "Alguna siesta se extiende después de las 4:00 p.m."},"siesta": {"siBrazosComiendo": "Se queda dormido comiendo en brazos de la madre","siBrazos": "Se queda dormido en brazos","siTV": "Se queda dormido viendo televisión","siCamaPadres": "Se queda dormido en la cama de los padres","siMecedora": "Se queda dormido en mecedora","siHamaca": "Se queda dormido en hamaca","siCoche": "Se queda dormido en el coche o en el carro","siCuna": "Se queda dormido solo, en su cuna o su cama"},"bears": {"bedtime": "Le cuesta acostarse o iniciar el sueño","somnolencia": "Somnolencia diurna, se duerme en clase o en el carro","cataplejia": "Se le afloja el cuerpo de repente al reírse o emocionarse","despPasaCama": "Se despierta para pasarse de su cama a la de los padres","despComer": "Se despierta para tomar la mamadera o el pecho","despOrinar": "Se despierta a orinar","desp3h": "Se despierta en sus primeras 3 horas de sueño, o se retuerce y se mueve mucho en esas horas","awakenings": "Otros despertares que requieren intervención del adulto","mismaHora": "Se despierta siempre a la misma hora","irregular": "Hora de acostarse y de despertar variables entre días","ronca": "Ronca de forma habitual"},"org": {"ronquido": "Ronca tres o más noches por semana","pausas": "Usted lo ha visto dejar de respirar unos segundos","bucal": "Duerme con la boca abierta","sudor": "Suda mucho durmiendo, aunque no haga calor","postura": "Duerme con la cabeza muy echada hacia atrás, o casi sentado","amigdalas": "Le han dicho que tiene las amígdalas o las adenoides grandes","obesidad": "El pediatra le ha dicho que tiene sobrepeso u obesidad","enuresis": "Volvió a orinarse en la cama después de haber dejado de hacerlo","piernas": "Se queja de las piernas al acostarse, o no puede tenerlas quietas","aliviaMov": "La molestia se le calma cuando mueve las piernas o se las soban","peorReposo": "Es peor cuando está quieto y al final del día","patadas": "Da patadas o mueve mucho las piernas mientras duerme","crecimiento": "En la casa le dicen que son \"dolores de crecimiento\"","familiarSPI": "Alguien más en la familia no puede tener las piernas quietas de noche","ferritina": "Le midieron la ferritina (el hierro) y salió por debajo de 50","bruxismo": "Rechina los dientes mientras duerme","bruxOye": "Se oye desde otro cuarto","bruxDolor": "Amanece con dolor de mandíbula o dolor de cabeza","bruxDesgaste": "El dentista le ha dicho que tiene los dientes desgastados","segSofa": "A veces se quedan dormidos en un sofá, sillón o mecedora","segSustancias": "Algún adulto toma alcohol, drogas o pastillas que dan sueño","segTabaco": "Alguien fuma en la casa, o se fumó durante el embarazo","segBlanda": "Hay colchón blando, almohadas, cobijas gruesas o peluches en la cama","segPrematuro": "Fue prematuro o nació con bajo peso","segOtros": "En la cama duermen también otros niños, o más de dos adultos","segBocaAbajo": "A veces amanece boca abajo o de lado","episodios": "Grita, se agita o se levanta a caminar dormido","primerTercio": "Pasa en las primeras tres o cuatro horas después de dormirse","amnesia": "Al día siguiente no se acuerda de nada","noResponde": "Durante el episodio está como ido y no la reconoce a usted","unoPorNoche": "Pasa una sola vez por noche y dura varios minutos","familiarPara": "Alguien más en la familia caminaba dormido o tenía terrores de noche","estereotipado": "Cada episodio es exactamente igual al anterior, como una grabación","agrupados": "Se repite dos o tres veces en la misma noche","breve": "Duran poco: menos de dos minutos","distonico": "Se pone rígido, se retuerce o queda en una postura forzada","recuerda": "Se acuerda de algo de lo que pasó","cualquierHora": "Puede pasar a cualquier hora de la noche, no solo al principio"},"cond": {"colecho": "Comparte cama con la madre o los padres","brazos": "Se duerme en brazos, mecedora, hamaca o coche","alimentaDormir": "Se duerme comiendo, al pecho o con mamadera","presencia": "Necesita que un adulto permanezca en el cuarto","reanuda": "De madrugada solo se reanuda el sueño si se restaura esa misma condición","acuestaDormido": "Se acuesta ya dormido","traslado": "Se queda dormido en un lugar y amanece en otro","tomaNocturna": "Recibe tomas de leche de noche o de madrugada","colechoReactivo": "El colecho empezó porque el niño se despertaba de madrugada","tvCuarto": "Hay televisor, tablet o celular dentro del dormitorio","resistencia": "Resistencia activa, negociación o llamadas repetidas","saleCama": "Se levanta de la cama repetidamente","sinLimites": "Los cuidadores no sostienen un límite consistente","sinRutina": "No hay rutina establecida antes de acostarse","pantallas": "Pantallas en la hora previa o dentro del dormitorio","cafeina": "Cafeína: café, té, chocolate, colas o energizantes","horarioIrregular": "Hora de acostarse variable de un día a otro","finSemana": "Diferencia mayor de 2 horas entre días de clase y fin de semana","duermeTarde": "En vacaciones duerme bien si elige su propio horario","despertarDificil": "Dificultad extrema para despertar en días de escuela","noSabenHoras": "Los cuidadores no saben cuántas horas necesita el niño","hiperactivo": "Hiperactividad, impulsividad, irritabilidad o agresividad","enlentecido": "Fatiga, apatía, lentitud, llanto fácil","escolar": "Bajo rendimiento escolar o quejas del maestro"}};
+const ETIQUETAS = {"ctx": {"prematuroSeg": "Prematuridad o seguimiento de alto riesgo neonatal","tea": "Trastorno del espectro autista","tdah": "TDAH diagnosticado","neuro": "Otro trastorno del neurodesarrollo o discapacidad","estimulantes": "Recibe medicación estimulante (metilfenidato o lisdexanfetamina)","estres": "Estrés o ansiedad referidos por la familia","despiertanNino": "Alguno de los padres despierta al niño en la noche porque llega demasiado tarde para saludarlo","trayecto": "Algún padre sale muy temprano o regresa después de las 8:00 p.m."},"root": {"siestaTarde": "Alguna siesta se extiende después de las 4:00 p.m."},"siesta": {"siBrazosComiendo": "Se queda dormido comiendo en brazos de la madre","siBrazos": "Se queda dormido en brazos","siTV": "Se queda dormido viendo televisión","siCamaPadres": "Se queda dormido en la cama de los padres","siMecedora": "Se queda dormido en mecedora","siHamaca": "Se queda dormido en hamaca","siCoche": "Se queda dormido en el coche o en el carro","siCuna": "Se queda dormido solo, en su cuna o su cama"},"bears": {"bedtime": "Le cuesta acostarse o iniciar el sueño","somnolencia": "Somnolencia diurna, se duerme en clase o en el carro","cataplejia": "Se le afloja el cuerpo de repente al reírse o emocionarse","despPasaCama": "Se despierta para pasarse de su cama a la de los padres","despComer": "Se despierta para tomar la mamadera o el pecho","despOrinar": "Se despierta a orinar","desp3h": "Se despierta en sus primeras 3 horas de sueño, o se retuerce y se mueve mucho en esas horas","awakenings": "Otros despertares que requieren intervención del adulto","mismaHora": "Se despierta siempre a la misma hora","irregular": "Hora de acostarse y de despertar variables entre días","ronca": "Ronca de forma habitual"},"org": {"ronquido": "Ronca tres o más noches por semana","pausas": "Usted lo ha visto dejar de respirar unos segundos","bucal": "Duerme con la boca abierta","sudor": "Suda mucho durmiendo, aunque no haga calor","postura": "Duerme con la cabeza muy echada hacia atrás, o casi sentado","amigdalas": "Le han dicho que tiene las amígdalas o las adenoides grandes","obesidad": "El pediatra le ha dicho que tiene sobrepeso u obesidad","enuresis": "Volvió a orinarse en la cama después de haber dejado de hacerlo","piernas": "Se queja de las piernas al acostarse, o no puede tenerlas quietas","aliviaMov": "La molestia se le calma cuando mueve las piernas o se las soban","peorReposo": "Es peor cuando está quieto y al final del día","patadas": "Da patadas o mueve mucho las piernas mientras duerme","crecimiento": "En la casa le dicen que son \"dolores de crecimiento\"","familiarSPI": "Alguien más en la familia no puede tener las piernas quietas de noche","ferritina": "Le midieron la ferritina (el hierro) y salió por debajo de 50","bruxismo": "Rechina los dientes mientras duerme","bruxOye": "Se oye desde otro cuarto","bruxDolor": "Amanece con dolor de mandíbula o dolor de cabeza","bruxDesgaste": "El dentista le ha dicho que tiene los dientes desgastados","segSofa": "A veces se quedan dormidos en un sofá, sillón o mecedora","segSustancias": "Algún adulto toma alcohol, drogas o pastillas que dan sueño","segTabaco": "Alguien fuma en la casa, o se fumó durante el embarazo","segBlanda": "Hay colchón blando, almohadas, cobijas gruesas o peluches en la cama","segPrematuro": "Fue prematuro o nació con bajo peso","segOtros": "En la cama duermen también otros niños, o más de dos adultos","segBocaAbajo": "A veces amanece boca abajo o de lado","episodios": "Grita, se agita o se levanta a caminar dormido","primerTercio": "Pasa en las primeras tres o cuatro horas después de dormirse","amnesia": "Al día siguiente no se acuerda de nada","noResponde": "Durante el episodio está como ido y no la reconoce a usted","unoPorNoche": "Pasa una sola vez por noche y dura varios minutos","familiarPara": "Alguien más en la familia caminaba dormido o tenía terrores de noche","estereotipado": "Cada episodio es exactamente igual al anterior, como una grabación","agrupados": "Se repite dos o tres veces en la misma noche","breve": "Duran poco: menos de dos minutos","distonico": "Se pone rígido, se retuerce o queda en una postura forzada","recuerda": "Se acuerda de algo de lo que pasó","cualquierHora": "Puede pasar a cualquier hora de la noche, no solo al principio"},"cond": {"colecho": "Comparte cama con la madre o los padres","brazos": "Se duerme en brazos, mecedora, hamaca o coche","alimentaDormir": "Se duerme comiendo, al pecho o con mamadera","presencia": "Necesita que un adulto permanezca en el cuarto","reanuda": "De madrugada solo se reanuda el sueño si se restaura esa misma condición","acuestaDormido": "Se acuesta ya dormido","traslado": "Se queda dormido en un lugar y amanece en otro","tomaNocturna": "Recibe tomas de leche de noche o de madrugada","colechoReactivo": "El colecho empezó porque el niño se despertaba de madrugada","tvCuarto": "Hay televisor, tablet o celular dentro del dormitorio","resistencia": "Resistencia activa, negociación o llamadas repetidas","saleCama": "Se levanta de la cama repetidamente","sinLimites": "Los cuidadores no sostienen un límite consistente","sinRutina": "No hay rutina establecida antes de acostarse","pantallas": "Pantallas en la hora previa o dentro del dormitorio","cafeina": "Cafeína: café, té, chocolate, colas o energizantes","horarioIrregular": "Hora de acostarse variable de un día a otro","finSemana": "Diferencia mayor de 2 horas entre días de clase y fin de semana","duermeTarde": "En vacaciones duerme bien si elige su propio horario","despertarDificil": "Dificultad extrema para despertar en días de escuela","noSabenHoras": "Los cuidadores no saben cuántas horas necesita el niño","hiperactivo": "Hiperactividad, impulsividad, irritabilidad o agresividad","enlentecido": "Fatiga, apatía, lentitud, llanto fácil","escolar": "Bajo rendimiento escolar o quejas del maestro"}};
 
 
 function _marcadas(grupo, claves){
@@ -1444,7 +1485,10 @@ function mecanismos(c){
   if(k.horarioIrregular || be.irregular) S2.push('Los horarios cambian de un día a otro');
   if(k.finSemana) S2.push('El fin de semana corre los horarios');
   if(k.pantallas || k.tvCuarto) S2.push('Pantallas en el cuarto o cerca de la hora de dormir');
-  if(k.cafeina || x.estimulantes) S2.push('Bebidas con cafeína');
+  if(k.cafeina) S2.push('Bebidas con cafeína');
+  /* El estimulante es un medicamento indicado, no un hábito: se nombra
+     aparte para que la familia no lea que su hijo "toma cafeína". */
+  if(x.estimulantes) S2.push('Toma medicación estimulante, que puede retrasar la hora de dormirse');
   if(k.despertarDificil) S2.push('Cuesta mucho despertarlo en la mañana');
   if(k.escolar) S2.push('El horario escolar obliga a levantarlo antes de que termine su sueño');
 
@@ -1484,6 +1528,44 @@ const LEE_DOM = {
   inicio:  'Necesita algo presente —brazos, compañía, una toma— para poder dormirse, y cuando eso falta a media noche, llama. El plan empieza por sustituir esa ayuda por una secuencia que él pueda repetir solo.'
 };
 
+/* ────────────────────────────────────────────────────────────
+   CUÁNTAS HORAS · va antes que cualquier otra explicación.
+   En la consulta, lo primero que hay que romper es el
+   desconocimiento de cuántas horas necesita el niño: mientras
+   la familia no tenga ese número, el resto del plan no tiene
+   dónde apoyarse. AASM 2016, avalada por la AAP.
+   ──────────────────────────────────────────────────────────── */
+function renderHoras(c){
+  const b = c.b;
+  const tabla = `<div class="tw"><table><thead><tr><th>Edad</th><th>Total en 24 h</th><th>Siestas</th></tr></thead><tbody>
+      ${BANDAS.map(x=>`<tr class="${b&&b.lb===x.lb?'hl':''}"><td>${x.lb}</td><td>${x.min}–${x.max_} h</td><td>${x.siestas}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="inset">AASM 2016, avalado por la AAP. Por debajo de 4 meses los valores son referenciales: no existe recomendación formal.</div>`;
+
+  let cabeza, veredicto = '';
+
+  if(!b){
+    cabeza = `<p class="sub" style="margin-bottom:14px">Ponga la edad de su hijo en la primera pestaña y aquí le aparece cuántas horas necesita.</p>`;
+  } else {
+    cabeza = `<div class="note green destacado"><b>Su hijo necesita entre ${b.min} y ${b.max_} horas de sueño en el día completo</b>Son horas en 24 horas, <strong>contando las siestas</strong>, no de corrido. A su edad le corresponden ${b.siestas} ${b.siestas==='0'?'siestas':'siesta(s)'} al día. Casi ninguna familia sabe este número, y es el que hay que tener claro antes de cambiar nada.</div>`;
+
+    if(c.total!==null){
+      if(c.estado==='bajo'){
+        veredicto = `<div class="note red"><b>Ahora duerme ${hm(c.total)}. Le faltan ${hm(b.min*60-c.total)} para llegar al mínimo</b>Eso no es el carácter de su hijo ni que "duerme poquito". Está durmiendo por debajo de lo que su edad necesita, y buena parte de lo que usted nota de día —irritabilidad, berrinches, que le cuesta concentrarse— puede venir justamente de ahí.</div>`;
+      } else if(c.estado==='alto'){
+        veredicto = `<div class="note amber"><b>Ahora duerme ${hm(c.total)}, por encima del rango de su edad</b>Dormir de más no suele ser un problema en sí mismo. Pero si aun así lo ve somnoliento de día, eso sí conviene revisarlo con su pediatra.</div>`;
+      } else {
+        veredicto = `<div class="note green"><b>Ahora duerme ${hm(c.total)}: está dentro del rango</b>Las horas no son el problema. Lo que hay que corregir es cómo o cuándo duerme, y eso es lo que viene abajo.</div>`;
+      }
+    }
+  }
+
+  return `<h3 style="margin-top:4px">Lo primero: cuántas horas debe dormir su hijo</h3>
+    ${cabeza}
+    ${veredicto}
+    ${tabla}`;
+}
+
 function renderTablero(c){
   const M = mecanismos(c);
   const hayAlgo = M.ejes.some(e=>e.s.length);
@@ -1502,7 +1584,9 @@ function renderTablero(c){
   return `<div class="tablero">
     <div class="semaforo ok"><b>Sin señales que necesiten médico antes de empezar</b>Con lo que usted marcó, no aparecieron señales de causa orgánica. Si más adelante nota ronquido con pausas, episodios siempre iguales o mucho sueño de día, vuelva a esta herramienta.</div>
 
-    <h3>Dónde está el problema de su hijo</h3>
+    ${renderHoras(c)}
+
+    <h3 style="margin-top:28px">Y ahora, dónde está el problema de su hijo</h3>
     <p class="sub" style="margin-bottom:14px">El sueño se sostiene sobre tres cosas distintas. Abajo está <strong>cuántas señales aparecieron en cada una</strong>, según lo que usted respondió. No es una medida de gravedad ni una nota: es un mapa para saber por dónde empezar.</p>
 
     ${barras}
@@ -1552,24 +1636,17 @@ function registrarTablero(){
    roja (renderDerivacion sale antes) y cuando el caso es
    conductual. Nunca condiciona el acceso al plan.
    ============================================================ */
-function renderOferta(){
+function renderContacto(){
   const wa = WHATSAPP
-    ? `<a class="go solid" style="display:block;text-align:center;text-decoration:none;margin-top:4px" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent('Hola doctor, vi el plan de sueño. Mi caso es '+ACCESO.codigo+' y quiero información del acompañamiento.')}">Escribir por WhatsApp</a>`
+    ? `<a class="go solid" style="display:block;text-align:center;text-decoration:none;margin-top:4px" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent('Hola doctor, vi el plan de sueño de mi hijo. Mi código de caso es '+ACCESO.codigo+' y me quedó una duda.')}">Escribir por WhatsApp</a>`
     : '';
-  return `<div class="oferta" id="oferta">
-    <div class="of-t">Si prefiere no hacerlo sola</div>
-    <div class="of-p">${SESIONES} sesiones de ${MINUTOS_SESION} minutos por videollamada · ${PRECIO_PROGRAMA} <span>pago único</span></div>
-    <p class="of-d">El plan que acaba de leer es suyo y no cuesta nada. Esto es otra cosa: dos consultas conmigo dentro de los primeros ${DIAS_PROGRAMA} días, que es el tramo en que hay que sostener el plan y donde la mayoría de las familias abandona.</p>
-    <ul class="plan">
-      <li><strong>Primera sesión</strong> al inicio: revisamos su caso, ajustamos el plan a su casa y a su horario, y decidimos con cuál de las dos formas de retirarse va a trabajar.</li>
-      <li><strong>Segunda sesión</strong> a las dos o tres semanas: revisamos el diario de sueño, corregimos lo que no funcionó y definimos el cierre.</li>
-      <li><strong>Entre una y otra</strong> queda con el plan escrito y su diario de ${DIAS_PROGRAMA} días.</li>
-      <li>Ambas por videollamada, desde su casa, sin traslados.</li>
-    </ul>
-    <div class="of-n"><b>Lo que quiero que sepa antes de decidir</b>
-      Es un pago único por las dos sesiones, no una suscripción: los problemas de sueño se resuelven en semanas y no tendría sentido cobrarle indefinidamente. Yo soy el autor de esta herramienta y cobro por estas consultas, así que tengo un interés en que usted las tome; se lo digo por escrito para que lo pese. <strong>Si aparece una señal que necesite estudio médico, no hay acompañamiento: hay derivación, y sin cobro.</strong> Y si prefiere llevar el plan a su propio pediatra, funciona igual de bien.</div>
-    <div class="inset" style="margin:12px 0">Cuando escriba, incluya su código de caso: <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Con él recupero todo lo que usted respondió aquí y no tiene que repetirlo.</div>
-    <a class="go quiet" style="display:block;text-align:center;text-decoration:none" href="mailto:${CORREO_CONTACTO}?subject=${encodeURIComponent('Acompañamiento de sueño · caso '+ACCESO.codigo)}&body=${encodeURIComponent('Hola doctor, vi el plan y me interesa el acompañamiento.\n\nMi código de caso es: '+ACCESO.codigo+'\n\nMi hijo tiene ___ y el problema principal es ___.')}">Escribir por correo</a>
+  return `<div class="oferta" id="contacto">
+    <div class="of-t">Si le queda alguna duda</div>
+    <div class="of-p">Escríbame · <span>sin costo</span></div>
+    <p class="of-d">Esta herramienta es gratuita y no hay nada que pagar: ni ahora ni después de usarla. Si leyó el plan y le quedó una duda, escríbame y la vemos.</p>
+    <p class="of-d">Si usted dejó su correo, yo ya tengo lo que respondió aquí, así que no empezamos de cero.</p>
+    <div class="inset" style="margin:12px 0">Cuando escriba, incluya su código de caso: <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Con él recupero todo lo que usted respondió y no tiene que repetirlo.</div>
+    <a class="go quiet" style="display:block;text-align:center;text-decoration:none" href="mailto:${CORREO_CONTACTO}?subject=${encodeURIComponent('Duda sobre el sueño · caso '+ACCESO.codigo)}&body=${encodeURIComponent('Hola doctor, vi el plan y me quedó una duda.\n\nMi código de caso es: '+ACCESO.codigo+'\n\nMi hijo tiene ___ y la duda es ___.')}">Escribir por correo</a>
     ${wa}
     <div class="of-f">Dr. Jano Jaramillo — Médico Pediatra y Neonatólogo · Posgrado en Trastornos del Aprendizaje</div>
   </div>`;
@@ -1649,7 +1726,11 @@ function renderPlan(){
   if(ids.includes('she')) est.push('<strong>Video-EEG de sueño.</strong> Episodios estereotipados y agrupados en la misma noche no son parasomnia hasta demostrarlo.');
   if(S.cond.enlentecido) est.push('<strong>TSH y T4 libre, hemograma y ferritina</strong> en el niño con fatiga o enlentecimiento. Medir, no clasificar.');
   if(ids.includes('bruxismo') && (S.org.ronquido||S.org.pausas)) est.push('<strong>Vía aérea primero.</strong> Bruxismo con ronquido: el estudio respiratorio precede a cualquier manejo dental. La férula no trata la causa.');
-  else if(ids.includes('bruxismo')) est.push('<strong>Valoración por odontopediatría</strong> para evaluar desgaste y proteger la dentición, entendiendo que no corrige la causa.');
+  /* La maloclusión como causa del bruxismo está refutada: las revisiones
+     sistemáticas no la sostienen, y por clase de Angle no hay asociación.
+     Se dice en claro porque es la explicación que la familia suele traer
+     de la consulta dental, y de ahí salen tratamientos que no sirven. */
+  else if(ids.includes('bruxismo')) est.push('<strong>Valoración por odontopediatría</strong> para revisar el desgaste y proteger los dientes. Una cosa que conviene que sepa: <strong>rechinar no viene de que el niño tenga la mordida torcida o los dientes desalineados.</strong> Eso se creía antes y los estudios no lo sostienen. El rechinido se origina en el cerebro durante el sueño, no en los dientes. Por eso una férula o un aparato protegen el diente, pero no quitan el rechinido, y enderezar la mordida tampoco lo quita.');
   if(S.bears.despOrinar) est.push('<strong>Despertar para orinar:</strong> descarte primero enuresis secundaria asociada a apnea obstructiva y revise el volumen de líquidos de la noche antes de tratarlo como hábito.');
   if(S.bears.cataplejia) est.push('<strong>Derivación a medicina del sueño</strong> por sospecha de narcolepsia.');
 
@@ -1746,16 +1827,10 @@ function renderPlan(){
         ?'En niños con un diagnóstico del neurodesarrollo sí puede tener indicación, pero solo después de haber hecho el plan completo y bien, nunca en lugar del plan. Y siempre indicada por su médico.'
         :'En un niño sin otro problema de salud, lo que se ha estudiado es que este tipo de plan funciona: mejora a más de 8 de cada 10 niños, y la mejoría se mantiene meses después. Por eso se empieza por aquí y no por un medicamento. Ninguna pastilla, gota o jarabe para dormir debe darse a un niño sin que se lo indique su médico.'}</div>
     </div>
-    <details><summary>Rangos de referencia por edad</summary>
-      <div class="tw"><table><thead><tr><th>Edad</th><th>Total en 24 h</th><th>Siestas</th></tr></thead><tbody>
-      ${BANDAS.map(b=>`<tr class="${S.edadMeses!==null&&banda(S.edadMeses).lb===b.lb?'hl':''}"><td>${b.lb}</td><td>${b.min}–${b.max_} h</td><td>${b.siestas}</td></tr>`).join('')}
-      </tbody></table></div>
-      <div class="inset">AASM 2016, avalado por la AAP. Por debajo de 4 meses los valores son referenciales: no existe recomendación formal.</div>
-    </details>
     ${casoEnviado()
       ? `<button class="go solid" onclick="window.print()">Imprimir o guardar en PDF</button>`
       : (ACCESO.correo ? renderReenvio('Llévese el plan por escrito','registrar()','Enviar y habilitar el PDF') : renderCandadoPDF())}
-    ${renderOferta()}
+    ${renderContacto()}
     <button class="go quiet" style="margin-top:12px" onclick="nuevaEvaluacion()">Nueva evaluación</button>
   </div>`;
 }
@@ -1796,7 +1871,7 @@ function renderAcerca(){
         <li><strong>Qué se recoge, y solo si usted registra su correo:</strong> su correo electrónico, su nombre si lo escribe, y <strong>las respuestas que usted dio en este tamizaje</strong> — la edad en meses, los horarios de sueño y las casillas que marcó. Se le asigna un <strong>código de caso</strong> (por ejemplo SUE-260829-A7K3) que identifica el registro sin nombrar a nadie.</li>
         <li><strong>Qué NUNCA se recoge:</strong> el nombre de su hijo, su fecha de nacimiento, su cédula, su dirección, su número de teléfono ni fotografías. El registro no permite identificar al niño.</li>
         <li><strong>Si usted no registra su correo</strong>, no se envía absolutamente nada: todo se queda en este teléfono y se borra al reiniciar la evaluación. El plan y la herramienta funcionan completos sin registrarse.</li>
-        <li><strong>Para qué:</strong> habilitar la descarga del plan, permitir que el Dr. Jaramillo retome su caso si usted lo contacta —sin que tenga que repetir todo— y enviarle información sobre el acompañamiento. Para nada más. <strong>No se usa para publicidad de terceros y no se vende.</strong></li>
+        <li><strong>Para qué:</strong> habilitar la descarga del plan, y permitir que el Dr. Jaramillo retome su caso si usted lo contacta, sin que tenga que repetir todo. Para nada más. <strong>No se usa para publicidad de terceros y no se vende.</strong></li>
         <li><strong>Base:</strong> su consentimiento expreso, que usted da al marcar la casilla. Puede negarlo y seguir usando la herramienta; solo no se habilita el PDF.</li>
         <li><strong>Dónde se guarda:</strong> en una hoja de cálculo privada de Google Workspace, accesible solo por el responsable, y en su correo electrónico profesional. No se comparte con ninguna otra plataforma.</li>
         <li><strong>Cuánto tiempo:</strong> ${RETENCION_MESES} meses desde el registro, o hasta que usted pida su eliminación.</li>
@@ -1806,21 +1881,14 @@ function renderAcerca(){
       </ul>
     </div>
 
-    <h3>Declaración de intereses</h3>
-    <div class="note amber"><b>Debe saberlo antes de usarla</b>Esta herramienta la desarrolló un médico que <strong>atiende consultas de sueño infantil de forma remunerada</strong> y que ofrece un programa de acompañamiento pagado. Si al final le sugerimos una consulta, esa consulta tiene costo y ese ingreso es para el autor. Se lo decimos por escrito para que usted lo pese. Puede llevar el plan o la hoja de derivación al pediatra de su preferencia, y funciona igual.</div>
-
-    <h3>El acompañamiento</h3>
-    <ul class="plan">
-      <li>Es <strong>opcional</strong>. La herramienta funciona completa sin él.</li>
-      <li>Son <strong>${SESIONES} sesiones de ${MINUTOS_SESION} minutos por videollamada</strong> dentro de los primeros <strong>${DIAS_PROGRAMA} días</strong>: una al inicio y otra a las dos o tres semanas, con el diario de sueño.</li>
-      <li>Es un <strong>pago único</strong>${PRECIO_PROGRAMA?` de ${PRECIO_PROGRAMA}`:''}, no una suscripción mensual. Los problemas de sueño se resuelven en semanas; no tendría sentido cobrarle indefinidamente.</li>
-      <li>Si aparece una señal de alarma, <strong>no hay acompañamiento</strong>: hay derivación, y sin cobro.</li>
-    </ul>
+    <h3>Qué cuesta usar esto</h3>
+    <div class="note green"><b>Nada</b>Esta herramienta es gratuita. No hay cobro, ni suscripción, ni pantalla de pago, ni publicidad, ni venta de sus datos. El plan es suyo, lo puede imprimir y lo puede llevar al pediatra de su preferencia. Si le queda una duda, puede escribirle al autor y tampoco se le cobra.</div>
+    <div class="note amber"><b>Lo que sí debe saber</b>El autor es médico pediatra y atiende consulta. Si en algún momento esta herramienta pasa a ofrecer un servicio pagado, se le dirá con todas sus letras en esta misma pestaña y antes de que usted decida nada. Hoy no lo ofrece.</div>
 
     <h3>Fuentes y versión</h3>
     <div class="inset">
       Paruthi S, et al. <em>J Clin Sleep Med</em> 2016;12(6):785 y 12(11):1549 (AASM, avalada por la AAP) · AASM, <em>ICSD-3-TR</em>, 2023 · Mindell JA, et al. <em>Sleep</em> 2006;29(10):1263 · Morgenthaler TI, et al. <em>Sleep</em> 2006;29(10):1277 · Galland BC, et al. <em>Sleep Med Rev</em> 2012;16(3):213 y <em>Sleep</em> 2018;41(4):zsy017 · Owens JA, Dalzell V. <em>Sleep Med</em> 2005;6(1):63 (BEARS).<br><br>
-      <strong>Versión familias 1.0 — agosto de 2026.</strong> Evidencia revisada a esa fecha.
+      <strong>Versión familias 1.1 — noviembre de 2026.</strong> Evidencia revisada a esa fecha.
     </div>
   </div>`;
 }

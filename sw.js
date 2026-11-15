@@ -1,7 +1,7 @@
 /* El sueño de su hijo · service worker
    Sube la versión en CACHE cada vez que publique cambios:
    así el teléfono descarta lo viejo y descarga lo nuevo. */
-const CACHE = 'cdss-sueno-v5';
+const CACHE = 'cdss-sueno-v17';
 const SHELL = ['./', './index.html', './manifest.json',
                './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 const FUENTES = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
