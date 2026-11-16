@@ -1591,27 +1591,27 @@ function renderHoras(c){
       </tbody></table></div>
       <div class="inset">AASM 2016, avalado por la AAP. Por debajo de 4 meses los valores son referenciales: no existe recomendación formal.</div>`;
 
-  let cabeza, veredicto = '';
+  const titulo = `<h3 style="margin-top:4px">Lo primero: cuántas horas debe dormir su hijo</h3>`;
 
   if(!b){
-    cabeza = `<p class="sub" style="margin-bottom:14px">Ponga la edad de su hijo en la primera pestaña y aquí le aparece cuántas horas necesita.</p>`;
-  } else {
-    cabeza = `<div class="note green destacado"><b>Su hijo necesita entre ${b.min} y ${b.max_} horas de sueño en el día completo</b>Son horas en 24 horas, <strong>contando las siestas</strong>, no de corrido. A su edad le corresponden ${b.siestas} ${b.siestas==='0'?'siestas':'siesta(s)'} al día. Casi ninguna familia sabe este número, y es el que hay que tener claro antes de cambiar nada.</div>`;
-
-    if(c.total!==null){
-      if(c.estado==='bajo'){
-        veredicto = `<div class="note red"><b>Ahora duerme ${hm(c.total)}. Le faltan ${hm(b.min*60-c.total)} para llegar al mínimo</b>Eso no es el carácter de su hijo ni que "duerme poquito". Está durmiendo por debajo de lo que su edad necesita, y buena parte de lo que usted nota de día —irritabilidad, berrinches, que le cuesta concentrarse— puede venir justamente de ahí.</div>`;
-      } else if(c.estado==='alto'){
-        veredicto = `<div class="note amber"><b>Ahora duerme ${hm(c.total)}, por encima del rango de su edad</b>Dormir de más no suele ser un problema en sí mismo. Pero si aun así lo ve somnoliento de día, eso sí conviene revisarlo con su pediatra.</div>`;
-      } else {
-        veredicto = `<div class="note green"><b>Ahora duerme ${hm(c.total)}: está dentro del rango</b>Las horas no son el problema. Lo que hay que corregir es cómo o cuándo duerme, y eso es lo que viene abajo.</div>`;
-      }
-    }
+    return `${titulo}
+      <p class="sub" style="margin-bottom:14px">Ponga la edad de su hijo en la primera pestaña y aquí le aparece cuántas horas necesita.</p>
+      ${tabla}`;
   }
 
-  return `<h3 style="margin-top:4px">Lo primero: cuántas horas debe dormir su hijo</h3>
-    ${cabeza}
-    ${veredicto}
+  /* La aclaración de que son horas en 24 h va siempre: sin ella, "doce horas"
+     se entiende como doce de corrido y la familia concluye que es imposible. */
+  const aclara = `<p class="sub" style="margin-bottom:14px">Son horas en 24 horas, <strong>contando las siestas</strong>, no de corrido.${b.siestas!=='0'?` A su edad le corresponden ${b.siestas} siesta(s) al día.`:''}</p>`;
+
+  /* La misma lectura que ve en Cuantificación, palabra por palabra: el plan
+     se imprime y se lleva al pediatra, así que tiene que sostenerse solo. */
+  const cuerpo = (c.total!==null && c.estado)
+    ? lecturaDelTotal(c,b)
+    : `<div class="note green destacado"><b>Su hijo necesita entre ${b.min} y ${b.max_} horas de sueño en el día completo</b>Ponga las horas en la pestaña Cuantificación y aquí le aparece cómo va su hijo.</div>`;
+
+  return `${titulo}
+    ${aclara}
+    ${cuerpo}
     ${tabla}`;
 }
 
