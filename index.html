@@ -510,7 +510,7 @@ function motor(){
       if(k.resistencia){s+=3;pro.push('Resistencia activa a acostarse, negociación o llamadas repetidas');}
       if(k.saleCama){s+=3;pro.push('Se levanta de la cama repetidamente');}
       if(k.sinLimites){s+=2;pro.push('Los cuidadores no sostienen un límite consistente');}
-      if(k.sinRutina){s+=1;pro.push('No hay rutina establecida de acostarse');}
+      if(k.sinRutina){s+=1;pro.push('No hay una «Rutina de Sueño» establecida antes de acostarse');}
       if(c.latencia!==null && c.latencia>30){s+=1;pro.push('Latencia de '+c.latencia+' min');}
       if(k.brazos||k.alimentaDormir) con.push('Coexiste asociación de inicio del sueño: puede ser forma mixta');
     } else { con.push('Edad menor de 2 años: presentación poco característica'); }
@@ -946,7 +946,7 @@ function renderCond(){
     ${chk(S.cond,'resistencia','Resistencia activa, negociación o llamadas repetidas')}
     ${chk(S.cond,'saleCama','Se levanta de la cama repetidamente')}
     ${chk(S.cond,'sinLimites','Los cuidadores no sostienen un límite consistente')}
-    ${chk(S.cond,'sinRutina','No hay rutina establecida antes de acostarse')}
+    ${chk(S.cond,'sinRutina','No hay una «Rutina de Sueño» establecida antes de acostarse')}
     <h3>Higiene y ritmo</h3>
     ${chk(S.cond,'pantallas','Pantallas en la hora previa o dentro del dormitorio')}
     ${chk(S.cond,'cafeina','Cafeína: café, té, chocolate, colas o energizantes')}
@@ -1070,7 +1070,7 @@ function nuevaEvaluacion(){
 
 /* ---------- Carga útil que se envía ---------- */
 /* ---------- Encuesta completa, tal como la marcó la familia ---------- */
-const ETIQUETAS = {"ctx": {"prematuroSeg": "Prematuridad o seguimiento de alto riesgo neonatal","tea": "Trastorno del espectro autista","tdah": "TDAH diagnosticado","neuro": "Otro trastorno del neurodesarrollo o discapacidad","estimulantes": "Recibe medicación estimulante (metilfenidato o lisdexanfetamina)","estres": "Estrés o ansiedad referidos por la familia","despiertanNino": "Alguno de los padres despierta al niño en la noche porque llega demasiado tarde para saludarlo","trayecto": "Algún padre sale muy temprano o regresa después de las 8:00 p.m."},"root": {"siestaTarde": "Alguna siesta se extiende después de las 4:00 p.m."},"siesta": {"siBrazosComiendo": "Se queda dormido comiendo en brazos de la madre","siBrazos": "Se queda dormido en brazos","siTV": "Se queda dormido viendo televisión","siCamaPadres": "Se queda dormido en la cama de los padres","siMecedora": "Se queda dormido en mecedora","siHamaca": "Se queda dormido en hamaca","siCoche": "Se queda dormido en el coche o en el carro","siCuna": "Se queda dormido solo, en su cuna o su cama"},"bears": {"bedtime": "Le cuesta acostarse o iniciar el sueño","somnolencia": "Somnolencia diurna, se duerme en clase o en el carro","cataplejia": "Se le afloja el cuerpo de repente al reírse o emocionarse","despPasaCama": "Se despierta para pasarse de su cama a la de los padres","despComer": "Se despierta para tomar la mamadera o el pecho","despOrinar": "Se despierta a orinar","desp3h": "Se despierta en sus primeras 3 horas de sueño, o se retuerce y se mueve mucho en esas horas","awakenings": "Otros despertares que requieren intervención del adulto","mismaHora": "Se despierta siempre a la misma hora","irregular": "Hora de acostarse y de despertar variables entre días","ronca": "Ronca de forma habitual"},"org": {"ronquido": "Ronca tres o más noches por semana","pausas": "Usted lo ha visto dejar de respirar unos segundos","bucal": "Duerme con la boca abierta","sudor": "Suda mucho durmiendo, aunque no haga calor","postura": "Duerme con la cabeza muy echada hacia atrás, o casi sentado","amigdalas": "Le han dicho que tiene las amígdalas o las adenoides grandes","obesidad": "El pediatra le ha dicho que tiene sobrepeso u obesidad","enuresis": "Volvió a orinarse en la cama después de haber dejado de hacerlo","piernas": "Se queja de las piernas al acostarse, o no puede tenerlas quietas","aliviaMov": "La molestia se le calma cuando mueve las piernas o se las soban","peorReposo": "Es peor cuando está quieto y al final del día","patadas": "Da patadas o mueve mucho las piernas mientras duerme","crecimiento": "En la casa le dicen que son \"dolores de crecimiento\"","familiarSPI": "Alguien más en la familia no puede tener las piernas quietas de noche","ferritina": "Le midieron la ferritina (el hierro) y salió por debajo de 50","bruxismo": "Rechina los dientes mientras duerme","bruxOye": "Se oye desde otro cuarto","bruxDolor": "Amanece con dolor de mandíbula o dolor de cabeza","bruxDesgaste": "El dentista le ha dicho que tiene los dientes desgastados","segSofa": "A veces se quedan dormidos en un sofá, sillón o mecedora","segSustancias": "Algún adulto toma alcohol, drogas o pastillas que dan sueño","segTabaco": "Alguien fuma en la casa, o se fumó durante el embarazo","segBlanda": "Hay colchón blando, almohadas, cobijas gruesas o peluches en la cama","segPrematuro": "Fue prematuro o nació con bajo peso","segOtros": "En la cama duermen también otros niños, o más de dos adultos","segBocaAbajo": "A veces amanece boca abajo o de lado","episodios": "Grita, se agita o se levanta a caminar dormido","primerTercio": "Pasa en las primeras tres o cuatro horas después de dormirse","amnesia": "Al día siguiente no se acuerda de nada","noResponde": "Durante el episodio está como ido y no la reconoce a usted","unoPorNoche": "Pasa una sola vez por noche y dura varios minutos","familiarPara": "Alguien más en la familia caminaba dormido o tenía terrores de noche","estereotipado": "Cada episodio es exactamente igual al anterior, como una grabación","agrupados": "Se repite dos o tres veces en la misma noche","breve": "Duran poco: menos de dos minutos","distonico": "Se pone rígido, se retuerce o queda en una postura forzada","recuerda": "Se acuerda de algo de lo que pasó","cualquierHora": "Puede pasar a cualquier hora de la noche, no solo al principio"},"cond": {"colecho": "Comparte cama con la madre o los padres","brazos": "Se duerme en brazos, mecedora, hamaca o coche","alimentaDormir": "Se duerme comiendo, al pecho o con mamadera","presencia": "Necesita que un adulto permanezca en el cuarto","reanuda": "De madrugada solo se reanuda el sueño si se restaura esa misma condición","acuestaDormido": "Se acuesta ya dormido","traslado": "Se queda dormido en un lugar y amanece en otro","tomaNocturna": "Recibe tomas de leche de noche o de madrugada","colechoReactivo": "El colecho empezó porque el niño se despertaba de madrugada","tvCuarto": "Hay televisor, tablet o celular dentro del dormitorio","resistencia": "Resistencia activa, negociación o llamadas repetidas","saleCama": "Se levanta de la cama repetidamente","sinLimites": "Los cuidadores no sostienen un límite consistente","sinRutina": "No hay rutina establecida antes de acostarse","pantallas": "Pantallas en la hora previa o dentro del dormitorio","cafeina": "Cafeína: café, té, chocolate, colas o energizantes","horarioIrregular": "Hora de acostarse variable de un día a otro","finSemana": "Diferencia mayor de 2 horas entre días de clase y fin de semana","duermeTarde": "En vacaciones duerme bien si elige su propio horario","despertarDificil": "Dificultad extrema para despertar en días de escuela","noSabenHoras": "Los cuidadores no saben cuántas horas necesita el niño","hiperactivo": "Hiperactividad, impulsividad, irritabilidad o agresividad","enlentecido": "Fatiga, apatía, lentitud, llanto fácil","escolar": "Bajo rendimiento escolar o quejas del maestro"}};
+const ETIQUETAS = {"ctx": {"prematuroSeg": "Prematuridad o seguimiento de alto riesgo neonatal","tea": "Trastorno del espectro autista","tdah": "TDAH diagnosticado","neuro": "Otro trastorno del neurodesarrollo o discapacidad","estimulantes": "Recibe medicación estimulante (metilfenidato o lisdexanfetamina)","estres": "Estrés o ansiedad referidos por la familia","despiertanNino": "Alguno de los padres despierta al niño en la noche porque llega demasiado tarde para saludarlo","trayecto": "Algún padre sale muy temprano o regresa después de las 8:00 p.m."},"root": {"siestaTarde": "Alguna siesta se extiende después de las 4:00 p.m."},"siesta": {"siBrazosComiendo": "Se queda dormido comiendo en brazos de la madre","siBrazos": "Se queda dormido en brazos","siTV": "Se queda dormido viendo televisión","siCamaPadres": "Se queda dormido en la cama de los padres","siMecedora": "Se queda dormido en mecedora","siHamaca": "Se queda dormido en hamaca","siCoche": "Se queda dormido en el coche o en el carro","siCuna": "Se queda dormido solo, en su cuna o su cama"},"bears": {"bedtime": "Le cuesta acostarse o iniciar el sueño","somnolencia": "Somnolencia diurna, se duerme en clase o en el carro","cataplejia": "Se le afloja el cuerpo de repente al reírse o emocionarse","despPasaCama": "Se despierta para pasarse de su cama a la de los padres","despComer": "Se despierta para tomar la mamadera o el pecho","despOrinar": "Se despierta a orinar","desp3h": "Se despierta en sus primeras 3 horas de sueño, o se retuerce y se mueve mucho en esas horas","awakenings": "Otros despertares que requieren intervención del adulto","mismaHora": "Se despierta siempre a la misma hora","irregular": "Hora de acostarse y de despertar variables entre días","ronca": "Ronca de forma habitual"},"org": {"ronquido": "Ronca tres o más noches por semana","pausas": "Usted lo ha visto dejar de respirar unos segundos","bucal": "Duerme con la boca abierta","sudor": "Suda mucho durmiendo, aunque no haga calor","postura": "Duerme con la cabeza muy echada hacia atrás, o casi sentado","amigdalas": "Le han dicho que tiene las amígdalas o las adenoides grandes","obesidad": "El pediatra le ha dicho que tiene sobrepeso u obesidad","enuresis": "Volvió a orinarse en la cama después de haber dejado de hacerlo","piernas": "Se queja de las piernas al acostarse, o no puede tenerlas quietas","aliviaMov": "La molestia se le calma cuando mueve las piernas o se las soban","peorReposo": "Es peor cuando está quieto y al final del día","patadas": "Da patadas o mueve mucho las piernas mientras duerme","crecimiento": "En la casa le dicen que son \"dolores de crecimiento\"","familiarSPI": "Alguien más en la familia no puede tener las piernas quietas de noche","ferritina": "Le midieron la ferritina (el hierro) y salió por debajo de 50","bruxismo": "Rechina los dientes mientras duerme","bruxOye": "Se oye desde otro cuarto","bruxDolor": "Amanece con dolor de mandíbula o dolor de cabeza","bruxDesgaste": "El dentista le ha dicho que tiene los dientes desgastados","segSofa": "A veces se quedan dormidos en un sofá, sillón o mecedora","segSustancias": "Algún adulto toma alcohol, drogas o pastillas que dan sueño","segTabaco": "Alguien fuma en la casa, o se fumó durante el embarazo","segBlanda": "Hay colchón blando, almohadas, cobijas gruesas o peluches en la cama","segPrematuro": "Fue prematuro o nació con bajo peso","segOtros": "En la cama duermen también otros niños, o más de dos adultos","segBocaAbajo": "A veces amanece boca abajo o de lado","episodios": "Grita, se agita o se levanta a caminar dormido","primerTercio": "Pasa en las primeras tres o cuatro horas después de dormirse","amnesia": "Al día siguiente no se acuerda de nada","noResponde": "Durante el episodio está como ido y no la reconoce a usted","unoPorNoche": "Pasa una sola vez por noche y dura varios minutos","familiarPara": "Alguien más en la familia caminaba dormido o tenía terrores de noche","estereotipado": "Cada episodio es exactamente igual al anterior, como una grabación","agrupados": "Se repite dos o tres veces en la misma noche","breve": "Duran poco: menos de dos minutos","distonico": "Se pone rígido, se retuerce o queda en una postura forzada","recuerda": "Se acuerda de algo de lo que pasó","cualquierHora": "Puede pasar a cualquier hora de la noche, no solo al principio"},"cond": {"colecho": "Comparte cama con la madre o los padres","brazos": "Se duerme en brazos, mecedora, hamaca o coche","alimentaDormir": "Se duerme comiendo, al pecho o con mamadera","presencia": "Necesita que un adulto permanezca en el cuarto","reanuda": "De madrugada solo se reanuda el sueño si se restaura esa misma condición","acuestaDormido": "Se acuesta ya dormido","traslado": "Se queda dormido en un lugar y amanece en otro","tomaNocturna": "Recibe tomas de leche de noche o de madrugada","colechoReactivo": "El colecho empezó porque el niño se despertaba de madrugada","tvCuarto": "Hay televisor, tablet o celular dentro del dormitorio","resistencia": "Resistencia activa, negociación o llamadas repetidas","saleCama": "Se levanta de la cama repetidamente","sinLimites": "Los cuidadores no sostienen un límite consistente","sinRutina": "No hay una «Rutina de Sueño» establecida antes de acostarse","pantallas": "Pantallas en la hora previa o dentro del dormitorio","cafeina": "Cafeína: café, té, chocolate, colas o energizantes","horarioIrregular": "Hora de acostarse variable de un día a otro","finSemana": "Diferencia mayor de 2 horas entre días de clase y fin de semana","duermeTarde": "En vacaciones duerme bien si elige su propio horario","despertarDificil": "Dificultad extrema para despertar en días de escuela","noSabenHoras": "Los cuidadores no saben cuántas horas necesita el niño","hiperactivo": "Hiperactividad, impulsividad, irritabilidad o agresividad","enlentecido": "Fatiga, apatía, lentitud, llanto fácil","escolar": "Bajo rendimiento escolar o quejas del maestro"}};
 
 
 function _marcadas(grupo, claves){
@@ -1261,7 +1261,7 @@ function renderBases(c, conBandera){
   const mayor1 = m!=null && m>=12;
 
   return `
-  <h3>Las bases del sueño</h3>
+  ${conBandera?`<h3>Las bases del sueño</h3>`:''}
   ${conBandera?`<div class="note amber"><b>Esto sí empiécelo desde hoy</b>Nada de lo que sigue es riesgoso mientras espera la cita, y a un niño al que le cuesta respirar de noche le hace todavía más falta. Lo único que no debe hacer todavía es <strong>dejarlo llorar solo o irse retirando del cuarto</strong>: eso se decide después de que el médico revise cómo respira.</div>`
   :`<p class="sub" style="margin-bottom:14px">Esto va primero, pase lo que pase. Es la base sobre la que se sostiene todo lo demás.</p>`}
 
@@ -1512,7 +1512,7 @@ function mecanismos(c){
   if(k.tomaNocturna && m >= 4) S3.push('Toma de noche fuera de lo que necesita a su edad');
   if(k.reanuda) S3.push('Solo vuelve a dormirse si se repite lo mismo de la noche anterior');
   if(k.colechoReactivo) S3.push('El colecho apareció como salida al problema, no por decisión');
-  if(k.sinRutina) S3.push('No hay una rutina fija antes de acostarse');
+  if(k.sinRutina) S3.push('No hay una «Rutina de Sueño» establecida antes de acostarse');
   if(k.sinLimites || k.resistencia || k.saleCama) S3.push('La hora de acostarse se negocia o se estira cada noche');
   if(['siBrazosComiendo','siBrazos','siTV','siCamaPadres','siMecedora','siHamaca','siCoche'].some(q=>si[q]))
     S3.push('En la siesta también se duerme con ayuda');
@@ -1647,7 +1647,7 @@ function renderTablero(c){
     ${M.dom?`<div class="note amber"><b>Por aquí empieza el plan: ${M.dom.t.toLowerCase()}</b>${LEE_DOM[M.dom.id]}</div>`
            :`<div class="note green"><b>No se concentraron señales en un solo punto</b>Lo que aparece está repartido. Aplique el plan completo y revise a las dos semanas cuál de los tres puntos quedó pendiente.</div>`}
 
-    ${M.cap.length?`<div class="note amber"><b>Antes de empezar, un ajuste a su realidad</b>En su caso ${M.cap.join(', ')}. Eso no es un fallo de la familia: es una condición con la que hay que contar. Ajuste el plan a lo que de verdad puede sostener todas las noches, aunque avance más lento. Un plan que no se puede cumplir se abandona completo.</div>`:''}
+    ${M.cap.length?`<div class="note amber"><b>Antes de empezar, un ajuste a su realidad</b>En su caso ${M.cap.join(', ')}. Eso no es un fallo de la familia: es una condición con la que hay que contar. Ajuste el plan a lo que de verdad puede sostener todas las noches, aunque avance más lento: un plan que no se puede cumplir se abandona completo.${(S.ctx.despiertanNino||S.ctx.trayecto)?` Si no puede con todo, quédese con tres cosas: hora fija para levantarlo, una rutina más corta pero siempre igual, y no despertarlo cuando usted se mueve en la casa.`:''}</div>`:''}
 
     ${casoEnviado()?`<div class="inset" style="margin-top:16px">Su caso quedó registrado con el código <strong style="color:#E9B949">${ACCESO.codigo}</strong>. Guárdelo: sirve para retomar el caso sin repetir nada.${ACCESO.pendiente?` <strong style="color:#E8843C">Ahora mismo no hay internet: se enviará solo en cuanto vuelva la conexión.</strong>`:''}</div>`:''}
     ${hayAlgo && !casoEnviado() && ACCESO.correo ? renderReenvio('¿Le enviamos este mapa y el plan a su correo?','registrarTablero()','Enviármelo') : ''}
@@ -1789,9 +1789,9 @@ function renderPlan(){
 
   int.push('<strong>Acuéstelo despierto, pero con sueño.</strong> Si se duerme antes de llegar a la cama, nada de lo demás va a funcionar.');
   if(c.acostarSug!==null) int.push(`<strong>Su hora objetivo es alrededor de las ${m2t(c.acostarSug)}</strong>. Sale de la hora a la que se levanta y de las horas que necesita dormir a su edad. Es una referencia: ajústela a su casa.`);
-  int.push('<strong>Establezca una «Rutina de Sueño fija» de 20 a 30 minutos</strong>, siempre en el mismo orden y terminando en el cuarto donde va a dormir.');
+  /* La rutina y los intervalos de reentrada no se repiten aquí: viven
+     completos más abajo, en la secuencia y en «Cómo retirarse». */
   if(top.includes('asoc')){
-    int.push('<strong>Vuelva cada vez más tarde.</strong> Si llora, entre a los 3 minutos, luego a los 5, luego a los 7, luego a los 10. Cada entrada dura menos de un minuto: sin cargarlo, sin prender la luz y sin darle comida. Los minutos son una referencia; use los que usted pueda sostener sin quebrarse.');
     int.push('<strong>Las primeras dos o tres noches van a ser peores.</strong> No significa que esté fallando: significa que está funcionando. Ahí es donde casi todo el mundo abandona, y por eso conviene saberlo desde ahora.');
   }
   if(S.cond.tomaNocturna && (S.edadMeses??0)>=4)
@@ -1816,9 +1816,13 @@ function renderPlan(){
     int.push('<strong>Eliminar el traslado nocturno.</strong> El niño debe iniciar el sueño en el mismo lugar donde va a amanecer; si no, al despertar entre ciclos comprueba que el escenario cambió y llama.');
   if(S.cond.colecho && (S.edadMeses??99)<12)
     int.push('<strong>Superficie de sueño separada.</strong> Por debajo del año la recomendación de sueño seguro se mantiene, sea el colecho cultural o reactivo.');
-  if(S.cond.noSabenHoras)
+  /* El número de horas ya encabeza el plan; repetirlo aquí sobraba. */
+  if(false)
     int.push('<strong>Tenga la cifra a la vista.</strong> Anote cuántas horas necesita dormir su hijo a su edad y péguelo donde lo vea: parte de lo que está pasando se resuelve solo con saber el número.');
-  int.push('<strong>Luz natural en los primeros 15 a 30 minutos de la mañana</strong> y hora de despertar constante los siete días.');
+  /* Si el reloj interno ya es el mecanismo dominante, la corrección de
+     fase de arriba dice esto mismo con más detalle. */
+  if(!top.includes('fase'))
+    int.push('<strong>Luz natural en los primeros 15 a 30 minutos de la mañana</strong> y hora de despertar constante los siete días.');
 
   const estructural = S.ctx.despiertanNino || S.ctx.trayecto;
   const neuro = S.ctx.tea||S.ctx.tdah||S.ctx.neuro;
@@ -1827,13 +1831,10 @@ function renderPlan(){
     <h2>Su plan</h2>
     ${renderTablero(c)}
     ${renderSeguridad()}
-    <h3 style="margin-top:26px">Qué hacer, paso a paso</h3>
-    ${estructural?`<div class="note amber"><b>Su horario cuenta, y no es su culpa</b>Parte de lo que le quita sueño a su hijo viene del trabajo o del trayecto, no de algo que usted esté haciendo mal. No intente cumplir el plan entero. Quédese con tres cosas: hora fija para levantarlo, una rutina más corta pero siempre igual, y no despertarlo cuando usted se mueve en la casa. Un plan que no se puede cumplir se abandona completo, y es preferible avanzar despacio.</div>`:''}
+    <h3 style="margin-top:26px">Qué hacer en su caso</h3>
     ${est.length?`<h3>Estudios</h3><ul class="plan">${est.map(e=>`<li>${e}</li>`).join('')}</ul>`:''}
-    <h3>Intervención</h3>
     <ul class="plan">${int.map(e=>`<li>${e}</li>`).join('')}</ul>
-    <h3>Sustituir, no solo retirar</h3>
-    <div class="item">
+    <div class="item" style="margin-top:18px">
       <div class="t">El principio</div>
       <div class="k">Un hábito de meses o años no se borra: se reemplaza</div>
       <div class="d">El niño no aprende a "dejar de pedir brazos". Aprende una secuencia nueva que predice el sueño y que ocupa el lugar de la anterior. Por eso el plan que solo retira el reforzador, sin poner nada en su lugar, fracasa más y se abandona antes.</div>
@@ -1853,19 +1854,18 @@ function renderPlan(){
       <li>Despedida corta, siempre igual, y retirarse.</li>
     </ul>
 
-    <p style="font-size:.95rem;color:var(--muted);margin:22px 0 10px"><strong style="color:var(--text)">2. El corrimiento de la hora.</strong> Se mueve 15 minutos cada 48 horas hasta llegar a la hora objetivo${c.acostarSug!==null?' ('+m2t(c.acostarSug)+')':''}. <strong style="color:var(--text)">La dirección importa:</strong></p>
+    <p style="font-size:.95rem;color:var(--muted);margin:22px 0 10px"><strong style="color:var(--text)">2. El corrimiento de la hora.</strong> Se mueve 15 minutos cada 48 horas hasta llegar a la hora objetivo de arriba. <strong style="color:var(--text)">La dirección importa:</strong></p>
     <div class="note amber"><b>Empiece por la hora en que el niño hoy realmente se duerme</b>${S.dormirse?'Hoy concilia el sueño alrededor de las '+m2t(t2m(S.dormirse))+'. Acuéstelo a esa hora las primeras noches':'Acuéstelo las primeras noches a la hora en que hoy se duerme de verdad'}, aunque parezca tardísimo. Llega con presión de sueño acumulada, se duerme en pocos minutos, y en tres o cuatro noches la cama queda asociada a dormirse rápido. <strong>Solo entonces</strong> empiece a adelantar 15 minutos cada dos noches. Si arranca acostándolo antes de que tenga sueño, pasará ese rato luchando en la cama y reforzará justamente lo que quiere romper.</div>
 
     <p style="font-size:.95rem;color:var(--muted);margin:22px 0 10px"><strong style="color:var(--text)">3. Cómo retirarse.</strong> Escoja una de las dos y sosténgala. No las mezcle ni cambie a mitad de camino:</p>
     <ul class="plan">
-      <li><strong>Salida directa con extinción gradual.</strong> Despedirse y salir; volver a intervalos crecientes —por ejemplo del orden de 3, 5, 7 y 10 minutos, ajustables—, sin cargar, sin luz y sin comida, menos de un minuto cada vez. Más rápida. Las primeras dos o tres noches empeoran.</li>
+      <li><strong>Salida directa con extinción gradual.</strong> Despedirse y salir; volver a intervalos crecientes —por ejemplo del orden de 3, 5, 7 y 10 minutos, ajustables—, sin cargar, sin luz y sin comida, menos de un minuto cada vez. Es la vía más rápida.</li>
       <li><strong>Salir poco a poco, con una silla.</strong> Siéntese junto a la cama sin hablarle y sin mirarlo. Cada dos o tres noches aleje la silla un poco, hasta quedar fuera del cuarto. Tarda más, pero se abandona menos. Es la opción si usted sabe que no va a soportar el llanto, o si el niño lleva años durmiendo acompañado.</li>
     </ul>
 
     <p style="font-size:.95rem;color:var(--muted);margin:22px 0 10px"><strong style="color:var(--text)">4. Cuánto va a tardar.</strong> Lo que puede esperar:</p>
     <div class="inset">La mejoría se ve en una o dos semanas. El hábito queda firme alrededor de las tres semanas de repetición sin excepciones, y algunos niños necesitan más tiempo. Un plazo con final se cumple mejor que "hasta que mejore".</div>
 
-    ${renderBases(c, false)}
     ${(S.edadMeses??999)<12?`<div class="note red"><b>Sueño seguro · menor de 12 meses</b>Antes de indicar cualquier plan conductual: decúbito supino; superficie firme, plana y separada; sin almohadas, protectores, juguetes ni ropa de cama suelta; compartir habitación, no cama. Y el retiro de tomas nocturnas no es automático por edad: exige curva ponderal ascendente, ausencia de enfermedad y edad corregida en el prematuro.</div>`:''}
     <h3>Seguimiento</h3>
     <ul class="plan">
@@ -1873,6 +1873,12 @@ function renderPlan(){
       <li>Control a las <strong>2 semanas</strong> con diario de sueño: hora de acostarse, latencia, número de despertares y hora de despertar.</li>
       <li>Si a las cuatro semanas <strong>hizo todo bien y no cambió nada</strong>, vuelva al pediatra y cuéntele exactamente qué hizo. Cuando un niño no responde a un plan bien aplicado, suele haber algo de fondo que hay que buscar.</li>
     </ul>
+    <details style="margin-top:26px">
+      <summary>Las bases del sueño · información general sobre el tema</summary>
+      <p class="sub" style="margin:10px 0 0">Esto no es parte de su plan: es lo que vale para cualquier niño. Léalo si quiere entender de dónde salen las indicaciones de arriba.</p>
+      ${renderBases(c, false)}
+    </details>
+
     <div class="item">
       <div class="t">Melatonina</div>
       <div class="k">${neuro?'Puede tener indicación, pero no antes del plan':'No es lo primero, y no se la dé por su cuenta'}</div>
