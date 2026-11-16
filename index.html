@@ -233,9 +233,13 @@ details .inset{margin-top:8px}
 }
 @media print{
   body{background:#fff;color:#111;padding:0}
-  /* el aviso clínico se imprime siempre; la autoría y las fuentes, nunca */
+  /* El aviso clínico, la firma y las fuentes se imprimen: la hoja va a
+     manos de otro pediatra y tiene que decir de dónde salió. */
   #pie{display:block!important}
-  #intro,footer{display:none!important}
+  #intro{display:none!important}
+  footer{display:block!important;border-top:1px solid #bbb;margin-top:22px;
+    padding-top:12px;color:#555;font-size:.72rem;line-height:1.5}
+  footer b{color:#111}
   .disc{border-left:3px solid #999;background:#fff;padding:14px 16px}
   .disc .t,.disc .l{display:none}
   .disc p{color:#555;font-size:.8rem}
@@ -322,7 +326,7 @@ details .inset{margin-top:8px}
     <p>Herramienta de orientación basada en guías publicadas. <strong>No es un diagnóstico y no sustituye la consulta con su pediatra.</strong> Si su hijo tiene dificultad para respirar, se pone morado o deja de respirar, busque atención médica de inmediato. Sus respuestas se quedan en este teléfono y solo se envían si usted registra su correo. Esta herramienta es gratuita: no hay cobro de ninguna clase.</p>
   </div>
 
-  <footer><b>Dr. Jano Jaramillo — Médico Pediatra y Neonatólogo · Posgrado en Trastornos del Aprendizaje.</b> Fuentes: AASM 2016 (J Clin Sleep Med 12:785, 12:1549); ICSD-3-TR 2023; Mindell 2006 (Sleep 29:1263); Morgenthaler 2006 (Sleep 29:1277); Galland 2012, 2018; Owens &amp; Dalzell 2005 (BEARS).</footer>
+  <footer><b>Dr. Jano Jaramillo — Médico Pediatra y Neonatólogo · Posgrado en Trastornos del Aprendizaje.</b> Fuentes: AASM 2016, avalada por la AAP (J Clin Sleep Med 12:785, 12:1549); ICSD-3-TR 2023; AAP 2022 (Pediatrics 150:e2022057990); Mindell 2006 (Sleep 29:1263); Morgenthaler 2006 (Sleep 29:1277); Galland 2012, 2018; Owens &amp; Dalzell 2005 (BEARS).</footer>
   </div>
 </div>
 
@@ -1785,7 +1789,7 @@ function renderPlan(){
 
   int.push('<strong>Acuéstelo despierto, pero con sueño.</strong> Si se duerme antes de llegar a la cama, nada de lo demás va a funcionar.');
   if(c.acostarSug!==null) int.push(`<strong>Su hora objetivo es alrededor de las ${m2t(c.acostarSug)}</strong>. Sale de la hora a la que se levanta y de las horas que necesita dormir a su edad. Es una referencia: ajústela a su casa.`);
-  int.push('<strong>Rutina fija de 20 a 30 minutos</strong>, siempre en el mismo orden y terminando en el cuarto donde va a dormir.');
+  int.push('<strong>Establezca una «Rutina de Sueño fija» de 20 a 30 minutos</strong>, siempre en el mismo orden y terminando en el cuarto donde va a dormir.');
   if(top.includes('asoc')){
     int.push('<strong>Vuelva cada vez más tarde.</strong> Si llora, entre a los 3 minutos, luego a los 5, luego a los 7, luego a los 10. Cada entrada dura menos de un minuto: sin cargarlo, sin prender la luz y sin darle comida. Los minutos son una referencia; use los que usted pueda sostener sin quebrarse.');
     int.push('<strong>Las primeras dos o tres noches van a ser peores.</strong> No significa que esté fallando: significa que está funcionando. Ahí es donde casi todo el mundo abandona, y por eso conviene saberlo desde ahora.');
@@ -1835,7 +1839,7 @@ function renderPlan(){
       <div class="d">El niño no aprende a "dejar de pedir brazos". Aprende una secuencia nueva que predice el sueño y que ocupa el lugar de la anterior. Por eso el plan que solo retira el reforzador, sin poner nada en su lugar, fracasa más y se abandona antes.</div>
     </div>
 
-    <p style="font-size:.95rem;color:var(--muted);margin:18px 0 10px"><strong style="color:var(--text)">1. La secuencia.</strong> Empezar 15 a 30 minutos antes de la hora de acostarse, todas las noches en el mismo orden:</p>
+    <p style="font-size:.95rem;color:var(--muted);margin:18px 0 10px"><strong style="color:var(--text)">1. Secuencia de la «Rutina de Sueño».</strong> Empezar 20 a 30 minutos antes de la hora de acostarse, todas las noches en el mismo orden:</p>
     <ul class="plan">
       <li>Llevarlo al baño a orinar.</li>
       <li>Baño con <strong>agua tibia</strong>, no caliente. Lo que induce el sueño no es el calor, sino la caída de temperatura corporal posterior.</li>
