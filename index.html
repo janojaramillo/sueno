@@ -384,6 +384,16 @@ function m2t(m){ m=((m%1440)+1440)%1440; const h=Math.floor(m/60), mi=m%60;
   return hh+':'+String(mi).padStart(2,'0')+' '+ap; }
 function hm(m){ if(m===null||isNaN(m)) return '—'; const h=Math.floor(m/60), mi=Math.round(m%60);
   return h+' h '+String(mi).padStart(2,'0'); }
+/* "1 hora y 5 minutos" en vez de "1 h 05": en un texto corrido se lee mejor. */
+function hmLargo(m){
+  if(m===null||isNaN(m)) return '—';
+  const h=Math.floor(m/60), mi=Math.round(m%60);
+  const ph = h===1 ? '1 hora' : h+' horas';
+  const pm = mi===1 ? '1 minuto' : mi+' minutos';
+  if(!h) return pm;
+  if(!mi) return ph;
+  return ph+' y '+pm;
+}
 function delta(a,b){ if(a===null||b===null) return null; let d=b-a; if(d<0) d+=1440; return d; }
 
 /* ---------- cálculo ---------- */
@@ -795,10 +805,7 @@ function renderCuant(){
       <div class="metric"><span class="k">Rango para ${b.lb}</span><span class="v">${b.min}–${b.max_} h</span></div>
       <div class="metric"><span class="k">Eficiencia de sueño<em>Cuánto del tiempo que pasa en la cama lo pasa dormido. No dice si duerme suficiente.</em></span><span class="v ${c.efic<85?'warn':'good'}">${c.efic!==null?c.efic+' %':'—'}</span></div>
     </div>
-    ${est?`<div class="note ${c.estado==='ok'?'green':(c.estado==='bajo'?'red':'amber')}"><b>Total ${est}</b>${c.estado==='bajo'?'Le faltan '+hm(b.min*60-c.total)+' para llegar al mínimo de su edad. Antes de pensar que es costumbre, revise la pestaña de señales de alarma.'
-       + (c.efic!==null && c.efic>=85
-          ? ' <strong>Fíjese en la eficiencia: '+c.efic+' %.</strong> Su hijo se duerme rápido y casi no se despierta, así que el problema no es cómo duerme: es que pasa poco tiempo en la cama. Lo que le falta es acostarlo más temprano o levantarlo más tarde, no entrenarlo a dormir.'
-          : ''):(c.estado==='alto'?'Duerme por encima del rango de su edad. Si aun así lo ve somnoliento de día, eso hay que revisarlo con el pediatra.':'La cantidad de horas está bien. Si aun así lo ve mal de día, el problema no son las horas sino cómo o cuándo duerme.')}</div>`:''}
+    ${est?lecturaDelTotal(c,b):''}
     ${c.acostarSug!==null?`<div class="item">
       <div class="t">Hora sugerida para dormir</div>
       <div class="k">${m2t(c.acostarSug)}</div>${c.acostarSugAviso?`
@@ -1535,6 +1542,48 @@ const LEE_DOM = {
    la familia no tenga ese número, el resto del plan no tiene
    dónde apoyarse. AASM 2016, avalada por la AAP.
    ──────────────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────
+   LA LECTURA DEL TOTAL · primero la conclusión, después los
+   números, después lo que el niño sí hace bien, y al final una
+   sola acción. La madre tiene que poder repetirlo de memoria.
+   ──────────────────────────────────────────────────────────── */
+function lecturaDelTotal(c,b){
+  const cierre = 'Dormir suficiente favorece su crecimiento, aprendizaje, atención y bienestar emocional.';
+  const bien   = c.efic!==null && c.efic>=85;
+
+  if(c.estado==='bajo'){
+    const falta = b.min*60 - c.total;
+    return `<div class="note red">
+      <b>Su hijo duerme menos de lo que necesita</b>
+      Duerme ${hmLargo(c.total)}, cuando para su edad se recomiendan entre ${b.min} y ${b.max_} horas. Le falta al menos ${hmLargo(falta)} de sueño.
+      ${bien
+        ? `<br><br><strong>Lo positivo:</strong> se duerme rápidamente y permanece dormido casi toda la noche (eficiencia del ${c.efic} %).`
+        : (c.efic!==null ? `<br><br>Además, pasa bastante rato despierto en la cama: de todo el tiempo que está acostado, duerme el ${c.efic} %.` : '')}
+      <br><br><strong>¿Qué hacer?</strong> ${bien
+        ? `Procure acostarlo más temprano para que duerma al menos ${b.min} horas.`
+        : `Acostarlo más temprano ayuda, pero primero hay que ver por qué pasa tanto rato despierto en la cama. Eso es lo que revisan las pestañas que siguen.`} ${cierre}
+    </div>`;
+  }
+
+  if(c.estado==='alto'){
+    return `<div class="note amber">
+      <b>Su hijo duerme más de lo que su edad necesita</b>
+      Duerme ${hmLargo(c.total)}, cuando para su edad se recomiendan entre ${b.min} y ${b.max_} horas.
+      <br><br>Dormir de más, por sí solo, no suele ser un problema.
+      <br><br><strong>¿Qué hacer?</strong> Si aun así lo ve somnoliento o apagado durante el día, coménteselo a su pediatra: dormir mucho y seguir cansado sí hay que estudiarlo.
+    </div>`;
+  }
+
+  return `<div class="note green">
+    <b>Su hijo duerme las horas que necesita</b>
+    Duerme ${hmLargo(c.total)}, dentro de las ${b.min} a ${b.max_} horas que se recomiendan para su edad.
+    ${bien ? `<br><br><strong>Lo positivo:</strong> además se duerme rápidamente y permanece dormido casi toda la noche (eficiencia del ${c.efic} %).` : ''}
+    <br><br><strong>¿Qué hacer?</strong> ${bien
+      ? 'Las horas no son el problema. Si aun así lo ve mal de día, lo que hay que mirar es cómo y cuándo duerme, y eso viene en las pestañas que siguen.'
+      : `Las horas alcanzan, pero pasa rato despierto en la cama (duerme el ${c.efic} % del tiempo que está acostado). Eso es lo que hay que mirar, y viene en las pestañas que siguen.`}
+  </div>`;
+}
+
 function renderHoras(c){
   const b = c.b;
   const tabla = `<div class="tw"><table><thead><tr><th>Edad</th><th>Total en 24 h</th><th>Siestas</th></tr></thead><tbody>
